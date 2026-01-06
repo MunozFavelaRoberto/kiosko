@@ -86,8 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final Color blueish = Color.lerp(colorScheme.primary, Colors.lightBlueAccent, 0.7) ?? colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -95,11 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.store_mall_directory_rounded, size: 100, color: Colors.blueAccent),
+                Icon(Icons.store_mall_directory_rounded, size: 100, color: blueish),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   "KIOSKO",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 2),
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 2),
                 ),
                 const SizedBox(height: 40),
 
@@ -108,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _userController,
                   decoration: InputDecoration(
                     labelText: 'Usuario',
-                    prefixIcon: const Icon(Icons.person_outline),
+                    prefixIcon: Icon(Icons.person_outline, color: colorScheme.onSurface.withAlpha((0.7 * 255).round())),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -120,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icon(Icons.lock_outline, color: colorScheme.onSurface.withAlpha((0.7 * 255).round())),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -133,27 +137,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _loginWithPassword,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
+                      backgroundColor: blueish,
+                      foregroundColor: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("INICIAR SESIÓN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
+                      : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 
                 const SizedBox(height: 40),
                 
                 // Divisor visual
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text("O ingresa con", style: TextStyle(color: Colors.grey)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text("O ingresa con", style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha((0.7 * 255).round()))),
                     ),
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
                   ],
                 ),
                 
@@ -165,17 +169,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: blueish.withAlpha((0.08 * 255).round()),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
+                      border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.fingerprint, size: 50, color: Colors.blueAccent),
+                        Icon(Icons.fingerprint, size: 50, color: blueish),
                         const SizedBox(height: 8),
                         Text(
                           "Huella / FaceID",
-                          style: TextStyle(color: Colors.blueAccent.shade700, fontWeight: FontWeight.w600),
+                          style: theme.textTheme.bodyMedium?.copyWith(color: blueish, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
