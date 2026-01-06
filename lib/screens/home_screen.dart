@@ -8,7 +8,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Inicio Kiosko")),
-      drawer: const AppDrawer(), // Aquí inyectamos el Drawer
+      drawer: const AppDrawer(),
       body: const Center(child: Text("Bienvenido al Kiosko")),
     );
   }

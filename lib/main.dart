@@ -6,7 +6,7 @@ import 'screens/settings_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
-  // Necesario para que SharedPreferences funcione antes del runApp
+  // Necesario para SharedPreferences funcione antes del runApp
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const KioskoApp());
 }
@@ -23,7 +23,7 @@ class KioskoApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
-      home: const CheckAuthScreen(), // Aquí es donde tu test busca el CircularProgressIndicator
+      home: const CheckAuthScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
@@ -65,7 +65,6 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        // Este es el widget que tu test de Flutter está buscando
         child: CircularProgressIndicator(),
       ),
     );

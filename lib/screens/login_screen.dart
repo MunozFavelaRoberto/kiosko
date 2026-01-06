@@ -10,17 +10,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Instancia del servicio que creamos
+  // Instancia de autenticación
   final AuthService _authService = AuthService();
   
-  // Controladores para capturar el texto de los campos
+  // Controladores para capturar texto de los campos
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
 
-  // Variable para mostrar un indicador de carga si es necesario
+  // Variable indicador de carga
   bool _isLoading = false;
 
-  /// Función que centraliza el éxito del login
+  // Función que centraliza el éxito del login
   Future<void> _handleLoginSuccess() async {
     await _authService.saveLoginState(); // Guardamos sesión en disco
     
@@ -33,26 +33,35 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Login tradicional por botón
-  void _loginWithPassword() {
+  // Login por botón
+  void _loginWithPassword() async {
+    setState(() => _isLoading = true);
     final user = _userController.text.trim();
     final pass = _passController.text.trim();
 
     if (user.isNotEmpty && pass.isNotEmpty) {
-      // Aquí podrías agregar validación real con una base de datos
-      _handleLoginSuccess();
+      bool loggedIn = await _authService.login(user, pass);
+      if (loggedIn) {
+        await _handleLoginSuccess();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Credenciales incorrectas')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, completa todos los campos')),
       );
     }
+    setState(() => _isLoading = false);
   }
 
-  /// Login usando la huella o el rostro
+  // Login por huella o rostro
   Future<void> _loginWithBiometrics() async {
     setState(() => _isLoading = true);
 
-    // Verificamos si el hardware está disponible
+    // Verificar hardware disponible
     bool canCheck = await _authService.canCheckBiometrics;
     
     if (canCheck) {
@@ -86,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icono decorativo de la App
                 const Icon(Icons.store_mall_directory_rounded, size: 100, color: Colors.blueAccent),
                 const SizedBox(height: 10),
                 const Text(
@@ -151,15 +159,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 20),
 
-                // Botón Biométrico Estilizado
+                // Botón Biométrico
                 GestureDetector(
                   onTap: _isLoading ? null : _loginWithBiometrics,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
                     ),
                     child: Column(
                       children: [

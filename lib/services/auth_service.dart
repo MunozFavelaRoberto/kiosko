@@ -62,4 +62,13 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('isLoggedIn') ?? false;
   }
+
+  // LOGIN HARDCODEADO
+  Future<bool> login(String username, String password) async {
+    if (username == "admin" && password == "admin") {
+      await saveLoginState();
+      return true;
+    }
+    return false;
+  }
 }

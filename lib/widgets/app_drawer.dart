@@ -7,13 +7,13 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Instanciamos el servicio para usar la función logout()
+    // Instanciamos la instancia de autenticación para usar la función logout()
     final AuthService authService = AuthService();
 
     return Drawer(
       child: Column(
         children: [
-          // Cabecera del Drawer (Donde suele ir la info del usuario)
+          // info del usuario
           UserAccountsDrawerHeader(
             currentAccountPicture: const CircleAvatar(
               backgroundColor: Colors.white,
@@ -35,17 +35,16 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
 
-          // Opción Inicio
+          // Menú
           ListTile(
             leading: const Icon(Icons.home_outlined, color: Colors.blueAccent),
             title: const Text("Inicio"),
             onTap: () {
-              // Cerramos el drawer y vamos a home (si no estamos ya ahí)
+              // Cierra drawer y vamos a home
               Navigator.pop(context); 
             },
           ),
 
-          // Opción Perfil
           ListTile(
             leading: const Icon(Icons.account_circle_outlined, color: Colors.blueAccent),
             title: const Text("Perfil"),
@@ -55,7 +54,6 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          // Opción Configuración
           ListTile(
             leading: const Icon(Icons.settings_outlined, color: Colors.blueAccent),
             title: const Text("Configuración"),
@@ -64,13 +62,7 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushNamed(context, '/settings');
             },
           ),
-
-          // Espaciador para empujar el botón de cerrar sesión al final
-          const Spacer(),
-
-          const Divider(),
-
-          // Opción Cerrar Sesión
+          
           ListTile(
             leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
             title: const Text(
@@ -78,7 +70,7 @@ class AppDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
             ),
             onTap: () async {
-              // 1. Mostrar diálogo de confirmación (Mejora la UX)
+              // 1. diálogo de confirmación
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
@@ -112,7 +104,6 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
