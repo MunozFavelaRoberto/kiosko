@@ -29,19 +29,16 @@ class AuthService {
         authMessages: const [
           AndroidAuthMessages(
             signInTitle: 'Inicio de Sesión - Kiosko',
-            biometricHint: 'Toca el sensor de huellas', // Ahora sí debería reconocerlo aquí
+            signInHint: 'Toca el sensor de huellas',
             cancelButton: 'Cerrar',
           ),
           IOSAuthMessages(
             cancelButton: 'Cancelar',
           ),
         ],
-        // Las opciones de comportamiento ahora van aquí directamente:
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-          useErrorDialogs: true,
-        ),
+        // Opciones de comportamiento:
+        persistAcrossBackgrounding: true,
+        biometricOnly: false,
       );
     } catch (e) {
       debugPrint('Error autenticación: $e');

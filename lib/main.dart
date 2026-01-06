@@ -6,7 +6,8 @@ import 'screens/settings_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // Necesario para procesos async antes de iniciar
+  // Necesario para que SharedPreferences funcione antes del runApp
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const KioskoApp());
 }
 
@@ -16,14 +17,13 @@ class KioskoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Kiosko App',
+      title: 'Kiosko',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
-      // En lugar de home: LoginScreen(), usamos nuestro "CheckAuthScreen"
-      home: const CheckAuthScreen(),
+      home: const CheckAuthScreen(), // Aquí es donde tu test busca el CircularProgressIndicator
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
@@ -34,7 +34,6 @@ class KioskoApp extends StatelessWidget {
   }
 }
 
-// Widget que decide a dónde ir
 class CheckAuthScreen extends StatefulWidget {
   const CheckAuthScreen({super.key});
 
@@ -46,29 +45,27 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
   @override
   void initState() {
     super.initState();
-    _checkSession();
+    _checkAuth();
   }
 
-  Future<void> _checkSession() async {
+  Future<void> _checkAuth() async {
     final authService = AuthService();
-    final bool isLoggedIn = await authService.isLoggedIn();
-
+    final bool loggedIn = await authService.isLoggedIn();
+    
     if (!mounted) return;
 
-    if (isLoggedIn) {
-      // Si está logueado, vamos directo al Home
+    if (loggedIn) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
-      // Si no, vamos al Login
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Mientras verifica, mostramos un spinner de carga
     return const Scaffold(
       body: Center(
+        // Este es el widget que tu test de Flutter está buscando
         child: CircularProgressIndicator(),
       ),
     );
