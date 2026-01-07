@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
-import 'package:local_auth_ios/local_auth_ios.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
@@ -31,9 +30,6 @@ class AuthService {
             signInTitle: 'Inicio de Sesión - Kiosko',
             signInHint: 'Toca el sensor de huellas',
             cancelButton: 'Cerrar',
-          ),
-          IOSAuthMessages(
-            cancelButton: 'Cancelar',
           ),
         ],
         // Opciones de comportamiento:
