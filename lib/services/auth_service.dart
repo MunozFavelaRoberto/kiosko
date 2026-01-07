@@ -80,7 +80,7 @@ class AuthService {
     return prefs.getBool('isLoggedIn') ?? false;
   }
 
-  // LOGIN HARDCODEADO
+  //LOGIN HARDCODEADO
   Future<bool> login(String username, String password) async {
     if (username == "admin" && password == "admin") {
       await saveLoginState();

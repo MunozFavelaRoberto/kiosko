@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/biometric_lock_screen.dart';
 import 'services/auth_service.dart';
 
 Future<void> main() async {
@@ -17,6 +19,10 @@ Future<void> main() async {
     child: KioskoApp(),
   ));
 }
+
+// Navegador global para empujar rutas desde Widgets fuera del árbol
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+const MethodChannel _screenChannel = MethodChannel('com.example.kiosko/screen');
 
 class KioskoApp extends StatelessWidget {
   const KioskoApp({super.key});
@@ -33,6 +39,7 @@ class KioskoApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'Kiosko',
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
@@ -65,12 +72,29 @@ class LockWrapper extends StatefulWidget {
 class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
   bool _wasPaused = false;
-  bool _locked = false;
+  DateTime? _pausedAt;
+  bool _screenWasLocked = false;
+  static const Duration _maxIdleForQuickUnlock = Duration(minutes: 5);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Listen for native screen on/off events
+    _screenChannel.setMethodCallHandler((call) async {
+      if (call.method == 'screenEvent') {
+        final String event = call.arguments as String? ?? '';
+        if (event == 'off') {
+          // Mark that the screen was locked while app was active
+          // so on resume we force the biometric lock even if short.
+          _pausedAt = DateTime.now();
+          // set a flag to indicate screen lock happened
+          // we represent it by setting _wasPaused = true and _pausedAt now
+          _wasPaused = true;
+          _screenWasLocked = true;
+        }
+      }
+    });
   }
 
   @override
@@ -84,77 +108,45 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       // La app fue enviada a background (posible bloqueo)
       _wasPaused = true;
+      _pausedAt = DateTime.now();
     }
 
     if (state == AppLifecycleState.resumed) {
       // Volvió al frente; si antes se pausó, activamos bloqueo inteligente
       if (_wasPaused) {
-        _tryLockIfNeeded();
+        final now = DateTime.now();
+        final diff = _pausedAt == null ? Duration.zero : now.difference(_pausedAt!);
+        final longPause = diff > _maxIdleForQuickUnlock;
+        // Forzar bloqueo si hubo una inactividad larga O si detectamos
+        // que el teléfono fue apagado / bloqueado nativamente.
+        if (longPause || _screenWasLocked) {
+          _tryLockIfNeeded(true);
+        }
+        // reset screen-locked marker after handling
+        _screenWasLocked = false;
       }
       _wasPaused = false;
     }
   }
 
-  Future<void> _tryLockIfNeeded() async {
+  Future<void> _tryLockIfNeeded(bool longPause) async {
     final use = await _authService.getUseBiometrics();
     if (!use) return;
 
-    // Mostrar pantalla bloqueada y pedir autenticación
     if (!mounted) return;
-    setState(() => _locked = true);
 
-    bool ok = false;
-
-    ok = await _authService.authenticate();
-
-    if (ok && mounted) {
-      setState(() => _locked = false);
-    }
+    // Empujar la pantalla de bloqueo biométrica. BiometricLockScreen decide
+    // si pop (resume) o navegar a /home (cold start) según 'forceToHome'.
+    await appNavigatorKey.currentState?.push(MaterialPageRoute(
+      builder: (context) => BiometricLockScreen(longPause: longPause, forceToHome: false),
+      fullscreenDialog: true,
+    ));
   }
-
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (_locked)
-          // Pantalla bloqueada
-          Positioned.fill(
-            child: Container(
-              color: Colors.indigo.shade900,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.lock, size: 80, color: Colors.white70),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Aplicación Bloqueada',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Por favor, autentícate con tu huella para continuar',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final ok = await _authService.authenticate();
-                        if (ok && mounted) setState(() => _locked = false);
-                      },
-                      icon: const Icon(Icons.fingerprint),
-                      label: const Text('Desbloquear'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade700),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
+    // Ahora delegamos el bloqueo en `BiometricLockScreen` para mantener
+    // comportamiento consistente entre cold start y resume.
+    return widget.child;
   }
 }
 
@@ -175,11 +167,19 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
   Future<void> _checkAuth() async {
     final authService = AuthService();
     final bool loggedIn = await authService.isLoggedIn();
+    final bool bioEnabled = await authService.getUseBiometrics();
     
     if (!mounted) return;
 
     if (loggedIn) {
-      Navigator.pushReplacementNamed(context, '/home');
+      if (bioEnabled) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BiometricLockScreen(forceToHome: true)),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }
