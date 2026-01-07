@@ -42,6 +42,27 @@ class AuthService {
     }
   }
 
+  // --- PREFERENCIA DE BIOMETRÍA ---
+
+  Future<void> setUseBiometrics(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('useBiometrics', value);
+    } catch (e) {
+      debugPrint('Error guardando preferencia biometría: $e');
+    }
+  }
+
+  Future<bool> getUseBiometrics() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('useBiometrics') ?? false;
+    } catch (e) {
+      debugPrint('Error leyendo preferencia biometría: $e');
+      return false;
+    }
+  }
+
   // --- PERSISTENCIA ---
 
   Future<void> saveLoginState() async {

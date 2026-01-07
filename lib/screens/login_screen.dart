@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Variable indicador de carga
   bool _isLoading = false;
+  bool _showBiometricButton = false;
 
   // Función que centraliza el éxito del login
   Future<void> _handleLoginSuccess() async {
@@ -85,6 +86,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _initBiometricVisibility();
+  }
+
+  Future<void> _initBiometricVisibility() async {
+    final canCheck = await _authService.canCheckBiometrics;
+    final use = await _authService.getUseBiometrics();
+    if (!mounted) return;
+    setState(() {
+      _showBiometricButton = canCheck && use;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -147,44 +163,47 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 40),
-                
-                // Divisor visual
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text("O ingresa con", style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha((0.7 * 255).round()))),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
+                // Mostrar bloque biométrico completo sólo si corresponde
+                if (_showBiometricButton) ...[
+                  const SizedBox(height: 40),
 
-                // Botón Biométrico
-                GestureDetector(
-                  onTap: _isLoading ? null : _loginWithBiometrics,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-                    decoration: BoxDecoration(
-                      color: blueish.withAlpha((0.08 * 255).round()),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.fingerprint, size: 50, color: blueish),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Huella / FaceID",
-                          style: theme.textTheme.bodyMedium?.copyWith(color: blueish, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                  // Divisor visual
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text("O ingresa con", style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha((0.7 * 255).round()))),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Botón Biométrico (solo si fue habilitado y el dispositivo lo soporta)
+                  GestureDetector(
+                    onTap: _isLoading ? null : _loginWithBiometrics,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+                      decoration: BoxDecoration(
+                        color: blueish.withAlpha((0.08 * 255).round()),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.fingerprint, size: 50, color: blueish),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Huella / FaceID",
+                            style: theme.textTheme.bodyMedium?.copyWith(color: blueish, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
