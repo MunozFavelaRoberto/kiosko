@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../services/theme_provider.dart';
 import '../services/auth_service.dart';
@@ -17,11 +18,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _loading = true;
   List<BiometricTypeInfo> _availableBiometrics = [];
   Map<String, bool> _biometricStates = {};
+  String _appVersion = 'Cargando...';
 
   @override
   void initState() {
     super.initState();
     _loadBiometrics();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() {
+        _appVersion = packageInfo.version;
+      });
+    } catch (e) {
+      debugPrint('Error cargando versión: $e');
+      if (!mounted) return;
+      setState(() {
+        _appVersion = 'Desconocida';
+      });
+    }
   }
 
   Future<void> _loadBiometrics() async {
@@ -233,10 +252,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text("Versión"),
-              subtitle: Text("1.0.0"),
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text("Versión"),
+              subtitle: Text(_appVersion),
             ),
           ),
           
