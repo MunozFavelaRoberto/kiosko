@@ -74,6 +74,7 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   bool _wasPaused = false;
   DateTime? _pausedAt;
   bool _screenWasLocked = false;
+  bool _isLockScreenActive = false; // Flag para evitar múltiples pantallas de bloqueo
   static const Duration _maxIdleForQuickUnlock = Duration(minutes: 5);
 
   @override
@@ -130,17 +131,26 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   }
 
   Future<void> _tryLockIfNeeded(bool longPause) async {
-    final use = await _authService.getUseBiometrics();
+    // Si ya hay una pantalla de bloqueo activa, no mostrar otra
+    if (_isLockScreenActive) return;
+    
+    final use = await _authService.isAnyBiometricEnabled();
     if (!use) return;
 
+    // Marcar que la pantalla de bloqueo está activa
+    _isLockScreenActive = true;
+    
     if (!mounted) return;
 
-    // Empujar la pantalla de bloqueo biométrica. BiometricLockScreen decide
-    // si pop (resume) o navegar a /home (cold start) según 'forceToHome'.
+    // Empujar la pantalla de bloqueo biométrica
     await appNavigatorKey.currentState?.push(MaterialPageRoute(
       builder: (context) => BiometricLockScreen(longPause: longPause, forceToHome: false),
       fullscreenDialog: true,
     ));
+    
+    // Cuando la pantalla de bloqueo se cierra, resetear el flag
+    if (!mounted) return;
+    _isLockScreenActive = false;
   }
   @override
   Widget build(BuildContext context) {
@@ -167,7 +177,7 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
   Future<void> _checkAuth() async {
     final authService = AuthService();
     final bool loggedIn = await authService.isLoggedIn();
-    final bool bioEnabled = await authService.getUseBiometrics();
+    final bool bioEnabled = await authService.isAnyBiometricEnabled();
     
     if (!mounted) return;
 

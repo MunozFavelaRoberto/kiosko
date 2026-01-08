@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../models/biometric_type_info.dart';
 
 class BiometricLockScreen extends StatefulWidget {
   final bool longPause;
-  final bool forceToHome; // si true, en éxito navega a /home; si false, hace pop
+  final bool forceToHome;
   const BiometricLockScreen({this.longPause = false, this.forceToHome = false, super.key});
 
   @override
@@ -15,56 +16,92 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   bool _authenticating = false;
   int _failedAttempts = 0;
   static const int _maxFailedAttempts = 3;
+  
+  BiometricTypeInfo? _primaryBiometric;
 
   @override
   void initState() {
     super.initState();
-    // Intentar autenticar al abrir
+    _loadPrimaryBiometric();
     WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
+  }
+
+  Future<void> _loadPrimaryBiometric() async {
+    final biometrics = await _authService.getAvailableBiometrics();
+    final addedTypes = <String>{};
+    
+    for (final biometric in biometrics) {
+      if (await _authService.isBiometricEnabled(biometric.type)) {
+        if (!addedTypes.contains(biometric.displayName)) {
+          if (!mounted) return;
+          setState(() {
+            _primaryBiometric = biometric;
+          });
+          return;
+        }
+      }
+    }
   }
 
   Future<void> _authenticate() async {
     if (_authenticating) return;
     setState(() => _authenticating = true);
 
-    final success = await _authService.authenticate();
-
-    if (!mounted) return;
-    setState(() => _authenticating = false);
-    if (success) {
-      if (widget.forceToHome) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pop(context);
+    if (_primaryBiometric != null) {
+      final success = await _authService.authenticateWithType(_primaryBiometric!.type);
+      
+      if (!mounted) return;
+      setState(() => _authenticating = false);
+      
+      if (success) {
+        _onAuthSuccess();
+        return;
       }
-      return;
+    } else {
+      final success = await _authService.authenticate();
+      
+      if (!mounted) return;
+      setState(() => _authenticating = false);
+      
+      if (success) {
+        _onAuthSuccess();
+        return;
+      }
     }
 
-    // Cuenta intentos fallidos
     setState(() => _failedAttempts += 1);
     if (_failedAttempts >= _maxFailedAttempts) {
-      // después de varios intentos fallidos, recomendamos entrar con contraseña
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demasiados intentos. Usa contraseña.')));
+    }
+  }
+
+  void _onAuthSuccess() {
+    if (widget.forceToHome) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pop(context);
     }
   }
 
   Future<void> _forceLogoutAndShowLogin() async {
     await _authService.logout();
     if (!mounted) return;
-    // En caso de forzar salida, siempre vamos al login y limpiamos la pila
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final biometricName = _primaryBiometric?.displayName ?? 'Biometría';
+    final biometricIcon = _primaryBiometric?.icon ?? Icons.fingerprint;
+
     return Scaffold(
       backgroundColor: Colors.blueGrey.shade900,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 100, color: Colors.white),
+            Icon(biometricIcon, size: 100, color: Colors.white),
             const SizedBox(height: 30),
             const Text(
               "Kiosko Protegido",
@@ -76,8 +113,8 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
             const SizedBox(height: 40),
             ElevatedButton.icon(
               onPressed: _authenticating ? null : _authenticate,
-              icon: const Icon(Icons.fingerprint),
-              label: Text(_authenticating ? 'Autenticando...' : 'Usar Biometría'),
+              icon: Icon(biometricIcon),
+              label: Text(_authenticating ? 'Autenticando...' : 'Usar $biometricName'),
             ),
             const SizedBox(height: 12),
             if (_failedAttempts >= _maxFailedAttempts)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../models/biometric_type_info.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Variable indicador de carga
   bool _isLoading = false;
   bool _showBiometricButton = false;
+  List<BiometricTypeInfo> _enabledBiometrics = [];
 
   // Función que centraliza el éxito del login
   Future<void> _handleLoginSuccess() async {
@@ -58,27 +60,27 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
   }
 
-  // Login por huella o rostro
-  Future<void> _loginWithBiometrics() async {
+  // Login por biometría específica
+  Future<void> _loginWithBiometrics(BiometricTypeInfo biometric) async {
     setState(() => _isLoading = true);
 
-    // Verificar hardware disponible
-    bool canCheck = await _authService.canCheckBiometrics;
+    // Verificar que la biometría sigue habilitada
+    final isEnabled = await _authService.isBiometricEnabled(biometric.type);
     
-    if (canCheck) {
-      bool authenticated = await _authService.authenticate();
+    if (isEnabled) {
+      bool authenticated = await _authService.authenticateWithType(biometric.type);
       if (authenticated) {
         await _handleLoginSuccess();
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Autenticación fallida')),
+          SnackBar(content: Text('Autenticación con ${biometric.displayName} fallida')),
         );
       }
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La biometría no está disponible en este equipo')),
+        const SnackBar(content: Text('Esta biometría ha sido deshabilitada')),
       );
     }
 
@@ -93,10 +95,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _initBiometricVisibility() async {
     final canCheck = await _authService.canCheckBiometrics;
-    final use = await _authService.getUseBiometrics();
+    
+    List<BiometricTypeInfo> enabledBiometrics = [];
+    if (canCheck) {
+      final available = await _authService.getAvailableBiometrics();
+      
+      // Normalizar: eliminar duplicados de strong/weak
+      final addedTypes = <String>{}; // track por displayName
+      
+      for (final biometric in available) {
+        // Verificar si está habilitada
+        final isEnabled = await _authService.isBiometricEnabled(biometric.type);
+        if (!isEnabled) continue;
+        
+        // Evitar duplicados
+        if (addedTypes.contains(biometric.displayName)) continue;
+        
+        enabledBiometrics.add(biometric);
+        addedTypes.add(biometric.displayName);
+      }
+    }
+    
     if (!mounted) return;
     setState(() {
-      _showBiometricButton = canCheck && use;
+      _showBiometricButton = enabledBiometrics.isNotEmpty;
+      _enabledBiometrics = enabledBiometrics;
     });
   }
 
@@ -181,27 +204,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Botón Biométrico (solo si fue habilitado y el dispositivo lo soporta)
-                  GestureDetector(
-                    onTap: _isLoading ? null : _loginWithBiometrics,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-                      decoration: BoxDecoration(
-                        color: blueish.withAlpha((0.08 * 255).round()),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.fingerprint, size: 50, color: blueish),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Huella / FaceID",
-                            style: theme.textTheme.bodyMedium?.copyWith(color: blueish, fontWeight: FontWeight.w600),
+                  // Botón Biométrico dinámico (muestra los métodos habilitados)
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: _enabledBiometrics.map((biometric) {
+                      return GestureDetector(
+                        onTap: _isLoading ? null : () => _loginWithBiometrics(biometric),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: blueish.withAlpha((0.08 * 255).round()),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
                           ),
-                        ],
-                      ),
-                    ),
+                          child: Column(
+                            children: [
+                              Icon(biometric.icon, size: 40, color: blueish),
+                              const SizedBox(height: 6),
+                              Text(
+                                biometric.displayName,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: blueish, 
+                                  fontWeight: FontWeight.w600
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ],
