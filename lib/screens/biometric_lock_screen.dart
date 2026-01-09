@@ -95,43 +95,58 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
     final biometricName = _primaryBiometric?.displayName ?? 'Biometría';
     final biometricIcon = _primaryBiometric?.icon ?? Icons.fingerprint;
 
-    return Scaffold(
-      backgroundColor: Colors.blueGrey.shade900,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(biometricIcon, size: 100, color: Colors.white),
-            const SizedBox(height: 30),
-            const Text(
-              "Kiosko Protegido",
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(widget.longPause ? 'Sesión inactiva — confirma tu identidad' : 'Identifícate para continuar',
-                style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: _authenticating ? null : _authenticate,
-              icon: Icon(biometricIcon),
-              label: Text(_authenticating ? 'Autenticando...' : 'Usar $biometricName'),
-            ),
-            const SizedBox(height: 12),
-            if (_failedAttempts >= _maxFailedAttempts)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: ElevatedButton(
+    // Se envuelve el Scaffold con PopScope para deshabilitar el botón de "atrás"
+    // en Android, forzando al usuario a autenticarse por seguridad.
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.blueGrey.shade900,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(biometricIcon, size: 100, color: Colors.white),
+              const SizedBox(height: 30),
+              const Text(
+                "Kiosko Protegido",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                  widget.longPause
+                      ? 'Sesión inactiva — confirma tu identidad'
+                      : 'Identifícate para continuar',
+                  style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: _authenticating ? null : _authenticate,
+                icon: Icon(biometricIcon),
+                label: Text(_authenticating
+                    ? 'Autenticando...'
+                    : 'Usar $biometricName'),
+              ),
+              const SizedBox(height: 12),
+              if (_failedAttempts >= _maxFailedAttempts)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: ElevatedButton(
+                    onPressed: _forceLogoutAndShowLogin,
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    child: const Text('Entrar con contraseña (cerrar sesión)'),
+                  ),
+                )
+              else
+                TextButton(
                   onPressed: _forceLogoutAndShowLogin,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                  child: const Text('Entrar con contraseña (cerrar sesión)'),
-                ),
-              )
-            else
-              TextButton(
-                onPressed: _forceLogoutAndShowLogin,
-                child: const Text("Entrar con contraseña", style: TextStyle(color: Colors.blue)),
-              )
-          ],
+                  child: const Text("Entrar con contraseña",
+                      style: TextStyle(color: Colors.blue)),
+                )
+            ],
+          ),
         ),
       ),
     );
