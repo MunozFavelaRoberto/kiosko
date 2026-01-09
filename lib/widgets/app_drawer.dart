@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../screens/login_screen.dart';
+import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/screens/login_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});

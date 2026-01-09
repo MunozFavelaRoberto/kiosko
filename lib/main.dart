@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'services/theme_provider.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/biometric_lock_screen.dart';
-import 'services/auth_service.dart';
+import 'package:kiosko/services/theme_provider.dart';
+import 'package:kiosko/screens/login_screen.dart';
+import 'package:kiosko/screens/home_screen.dart';
+import 'package:kiosko/screens/profile_screen.dart';
+import 'package:kiosko/screens/settings_screen.dart';
+import 'package:kiosko/screens/biometric_lock_screen.dart';
+import 'package:kiosko/services/auth_service.dart';
 
 Future<void> main() async {
   // Necesario para SharedPreferences funcione antes del runApp

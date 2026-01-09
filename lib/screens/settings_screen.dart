@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import '../services/theme_provider.dart';
-import '../services/auth_service.dart';
-import '../models/biometric_type_info.dart';
+import 'package:kiosko/services/theme_provider.dart';
+import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/models/biometric_type_info.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -202,7 +202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Divider(height: 1, indent: 72, endIndent: 16),
                       ],
                     );
-                  }).toList(),
+                  }),
                   
                   // Estado de biometría
                   Container(
