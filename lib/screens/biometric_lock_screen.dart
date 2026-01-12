@@ -15,7 +15,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   final AuthService _authService = AuthService();
   bool _authenticating = false;
   int _failedAttempts = 0;
-  static const int _maxFailedAttempts = 3;
+  static const int _maxFailedAttempts = 5;
   
   BiometricTypeInfo? _primaryBiometric;
 
