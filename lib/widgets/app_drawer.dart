@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
-import 'package:kiosko/screens/login_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Instanciamos la instancia de autenticación para usar la función logout()
-    final AuthService authService = AuthService();
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     return Drawer(
       child: Column(
         children: [
           // info del usuario
-          UserAccountsDrawerHeader(
-            currentAccountPicture: const CircleAvatar(
+          const UserAccountsDrawerHeader(
+            currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, size: 45, color: Colors.blueAccent),
             ),
-            accountName: const Text(
+            accountName: Text(
               "Usuario Kiosko",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            accountEmail: const Text("soporte@kiosko.com"),
-            decoration: const BoxDecoration(
+            accountEmail: Text("soporte@kiosko.com"),
+            decoration: BoxDecoration(
               color: Colors.blueAccent,
               image: DecorationImage(
                 image: NetworkImage(
@@ -90,11 +89,7 @@ class AppDrawer extends StatelessWidget {
                           if (!context.mounted) return;
 
                           // 3. Volver al Login eliminando todas las rutas previas
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                            (route) => false,
-                          );
+                          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                         },
                         child: const Text("Salir", style: TextStyle(color: Colors.red)),
                       ),

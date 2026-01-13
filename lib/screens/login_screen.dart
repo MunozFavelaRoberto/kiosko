@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
-import 'package:kiosko/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   // Instancia de autenticación
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
   
   // Controladores para capturar texto de los campos
   final TextEditingController _userController = TextEditingController();
@@ -23,6 +23,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _showBiometricButton = false;
   List<BiometricTypeInfo> _enabledBiometrics = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _authService = Provider.of<AuthService>(context, listen: false);
+    _initBiometricVisibility();
+  }
+  
   // Función que centraliza el éxito del login
   Future<void> _handleLoginSuccess() async {
     await _authService.saveLoginState(); // Guardamos sesión en disco
@@ -30,10 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     
     // Navegamos al Home y eliminamos la pantalla de login del historial
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   // Login por botón
@@ -57,7 +61,9 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(content: Text('Por favor, completa todos los campos')),
       );
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   // Login por biometría específica
@@ -84,13 +90,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
-    setState(() => _isLoading = false);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initBiometricVisibility();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _initBiometricVisibility() async {

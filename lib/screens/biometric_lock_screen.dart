@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 
@@ -12,7 +13,7 @@ class BiometricLockScreen extends StatefulWidget {
 }
 
 class _BiometricLockScreenState extends State<BiometricLockScreen> {
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
   bool _authenticating = false;
   int _failedAttempts = 0;
   static const int _maxFailedAttempts = 5;
@@ -22,6 +23,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   @override
   void initState() {
     super.initState();
+    _authService = Provider.of<AuthService>(context, listen: false);
     _loadPrimaryBiometric();
     WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
   }
@@ -69,10 +71,11 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
       }
     }
 
-    setState(() => _failedAttempts += 1);
-    if (_failedAttempts >= _maxFailedAttempts) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demasiados intentos. Usa contraseña.')));
+    if(mounted) {
+      setState(() => _failedAttempts += 1);
+      if (_failedAttempts >= _maxFailedAttempts) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demasiados intentos. Usa contraseña.')));
+      }
     }
   }
 
@@ -117,7 +120,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
               const SizedBox(height: 10),
               Text(
                   widget.longPause
-                      ? 'Sesión inactiva — confirma tu identidad'
+                      ? 'Confirma tu identidad'
                       : 'Identifícate para continuar',
                   style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 40),

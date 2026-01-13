@@ -10,14 +10,19 @@ import 'package:kiosko/screens/biometric_lock_screen.dart';
 import 'package:kiosko/services/auth_service.dart';
 
 Future<void> main() async {
-  // Necesario para SharedPreferences funcione antes del runApp
+  // Necesario para que SharedPreferences funcione antes del runApp
   WidgetsFlutterBinding.ensureInitialized();
   final themeProvider = ThemeProvider();
   await themeProvider.loadTheme();
-  runApp(ChangeNotifierProvider<ThemeProvider>.value(
-    value: themeProvider,
-    child: KioskoApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        Provider<AuthService>(create: (_) => AuthService()),
+      ],
+      child: const KioskoApp(),
+    ),
+  );
 }
 
 // Navegador global para empujar rutas desde Widgets fuera del árbol
@@ -29,13 +34,8 @@ class KioskoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isDark = false;
-    try {
-      final themeProvider = Provider.of<ThemeProvider>(context);
-      isDark = themeProvider.isDark;
-    } catch (_) {
-      isDark = false;
-    }
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDark;
 
     return MaterialApp(
       title: 'Kiosko',
@@ -70,7 +70,7 @@ class LockWrapper extends StatefulWidget {
 }
 
 class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
   bool _wasPaused = false;
   DateTime? _pausedAt;
   bool _screenWasLocked = false;
@@ -80,6 +80,7 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _authService = Provider.of<AuthService>(context, listen: false);
     WidgetsBinding.instance.addObserver(this);
     // Listen for native screen on/off events
     _screenChannel.setMethodCallHandler((call) async {
@@ -175,7 +176,7 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
   }
 
   Future<void> _checkAuth() async {
-    final authService = AuthService();
+    final authService = Provider.of<AuthService>(context, listen: false);
     final bool loggedIn = await authService.isLoggedIn();
     final bool bioEnabled = await authService.isAnyBiometricEnabled();
     

@@ -13,7 +13,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
 
   bool _loading = true;
   List<BiometricTypeInfo> _availableBiometrics = [];
@@ -23,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _authService = Provider.of<AuthService>(context, listen: false);
     _loadBiometrics();
     _loadAppVersion();
   }
@@ -199,7 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         if (_availableBiometrics.last != biometric)
-                          Divider(height: 1, indent: 72, endIndent: 16),
+                          const Divider(height: 1, indent: 72, endIndent: 16),
                       ],
                     );
                   }),
