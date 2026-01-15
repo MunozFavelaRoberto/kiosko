@@ -66,14 +66,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   void _onDestinationSelected(int index) {
-    if (index == 2) {
-      // Si el índice es 2 (Menú), abrimos el Drawer y no cambiamos la pestaña
-      _scaffoldKey.currentState?.openDrawer();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -84,8 +79,15 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Kiosko'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            tooltip: 'Menú',
+          ),
+        ],
       ),
-      drawer: const AppDrawer(),
+      endDrawer: const AppDrawer(),
       body: _pages.elementAt(_selectedIndex),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -100,10 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.payment_outlined),
             selectedIcon: Icon(Icons.payment),
             label: 'Pagos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu),
-            label: 'Menú',
           ),
         ],
       ),
