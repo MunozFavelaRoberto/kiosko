@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kiosko/models/category.dart';
 import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
+import 'package:kiosko/models/user.dart';
 import 'package:kiosko/services/api_service.dart';
 
 class DataProvider extends ChangeNotifier {
@@ -10,11 +11,13 @@ class DataProvider extends ChangeNotifier {
   List<Category> _categories = [];
   List<Service> _services = [];
   List<Payment> _payments = [];
+  User? _user;
   bool _isLoading = false;
 
   List<Category> get categories => _categories;
   List<Service> get services => _services;
   List<Payment> get payments => _payments;
+  User? get user => _user;
   bool get isLoading => _isLoading;
 
   Future<void> fetchCategories() async {
@@ -57,6 +60,21 @@ class DataProvider extends ChangeNotifier {
       _payments = (data as List<dynamic>).map((json) => Payment.fromJson(json)).toList();
     } catch (e) {
       debugPrint('Error fetching payments: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final data = await _apiService.get('/user');
+      _user = User.fromJson(data);
+    } catch (e) {
+      debugPrint('Error fetching user: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiosko/widgets/client_number_header.dart';
 
 class ProfileScreen extends StatelessWidget {
   static const routeName = '/profile';
@@ -11,8 +12,15 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Perfil'),
       ),
-      body: const Center(
-        child: Text('Esta es la pantalla de perfil.'),
+      body: Column(
+        children: [
+          const ClientNumberHeader(),
+          const Expanded(
+            child: Center(
+              child: Text('Esta es la pantalla de perfil.'),
+            ),
+          ),
+        ],
       ),
     );
   }

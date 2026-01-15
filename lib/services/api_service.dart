@@ -14,6 +14,16 @@ class ApiService {
 
   // Método GET
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+    // Simulación para '/user' sin hacer petición real
+    if (endpoint == '/user') {
+      await Future.delayed(const Duration(seconds: 1)); // Simular delay
+      return {
+        'clientNumber': '001',
+        'status': 'Pendiente',
+        'balance': 150.0,
+      };
+    }
+
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
       final response = await _client.get(uri, headers: headers).timeout(const Duration(seconds: 10));
