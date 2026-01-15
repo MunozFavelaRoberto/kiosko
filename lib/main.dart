@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/screens/login_screen.dart';
+import 'package:kiosko/screens/billing_screen.dart';
+import 'package:kiosko/screens/cards_screen.dart';
 import 'package:kiosko/screens/home_screen.dart';
 import 'package:kiosko/screens/profile_screen.dart';
 import 'package:kiosko/screens/settings_screen.dart';
@@ -56,6 +58,8 @@ class KioskoApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/settings': (context) => const SettingsScreen(),
+        CardsScreen.routeName: (context) => const CardsScreen(),
+        BillingScreen.routeName: (context) => const BillingScreen(),
       },
     );
   }

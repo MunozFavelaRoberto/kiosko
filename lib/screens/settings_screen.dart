@@ -6,6 +6,8 @@ import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 
 class SettingsScreen extends StatefulWidget {
+  static const routeName = '/settings';
+
   const SettingsScreen({super.key});
 
   @override
