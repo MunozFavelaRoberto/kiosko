@@ -140,51 +140,71 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.store_mall_directory_rounded, size: 100, color: blueish),
-                const SizedBox(height: 10),
-                Text(
-                  "KIOSKO",
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 2),
-                ),
-                const SizedBox(height: 40),
-
-                // Campo Usuario
-                TextField(
-                  controller: _userController,
-                  decoration: InputDecoration(
-                    labelText: 'Usuario',
-                    prefixIcon: Icon(Icons.person_outline, color: colorScheme.onSurface.withAlpha((0.7 * 255).round())),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade700,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  child: Column(
+                    children: [
+                      Image.asset('assets/images/svr_logo.png', height: 100, width: 100),
+                      const SizedBox(height: 40),
 
-                // Campo Contraseña
-                TextField(
-                  controller: _passController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: Icon(Icons.lock_outline, color: colorScheme.onSurface.withAlpha((0.7 * 255).round())),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 30),
+                      // Campo Usuario
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextField(
+                          controller: _userController,
+                          decoration: InputDecoration(
+                            hintText: 'Usuario',
+                            hintStyle: const TextStyle(color: Colors.black54),
+                            prefixIcon: Icon(Icons.person_outline, color: Colors.black54),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
-                // Botón Ingresar
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _loginWithPassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: blueish,
-                      foregroundColor: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _isLoading 
-                      ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
-                      : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
+                      // Campo Contraseña
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextField(
+                          controller: _passController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            hintText: 'Contraseña',
+                            hintStyle: const TextStyle(color: Colors.black54),
+                            prefixIcon: Icon(Icons.lock_outline, color: Colors.black54),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Botón Ingresar
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _loginWithPassword,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: blueish,
+                            foregroundColor: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isLoading
+                            ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
+                            : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 

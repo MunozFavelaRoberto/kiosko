@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
+import 'package:kiosko/services/data_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,10 +14,55 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dataProvider = Provider.of<DataProvider>(context, listen: false);
+      dataProvider.fetchCategories();
+      dataProvider.fetchServices();
+      dataProvider.fetchPayments();
+    });
+  }
+
   // Vistas para las pestañas principales
-  static const List<Widget> _pages = <Widget>[
-    Center(child: Text('Pantalla de Inicio', style: TextStyle(fontSize: 18))),
-    Center(child: Text('Pantalla de Pagos', style: TextStyle(fontSize: 18))),
+  late final List<Widget> _pages = <Widget>[
+    Consumer<DataProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+        return ListView.builder(
+          itemCount: provider.categories.length,
+          itemBuilder: (context, index) {
+            final category = provider.categories[index];
+            return ListTile(
+              title: Text(category.name),
+              subtitle: Text(category.description),
+              onTap: () {
+                // Mostrar servicios de la categoría
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Servicios de ${category.name}')),
+                );
+              },
+            );
+          },
+        );
+      },
+    ),
+    Consumer<DataProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+        return ListView.builder(
+          itemCount: provider.payments.length,
+          itemBuilder: (context, index) {
+            final payment = provider.payments[index];
+            return ListTile(
+              title: Text('Pago ${payment.id}'),
+              subtitle: Text('Monto: \$${payment.amount} - Ref: ${payment.reference}'),
+            );
+          },
+        );
+      },
+    ),
   ];
 
   void _onDestinationSelected(int index) {
