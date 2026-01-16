@@ -51,14 +51,6 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushNamed(context, BillingScreen.routeName);
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined, color: Colors.blueAccent),
-                  title: const Text("Configuración"),
-                  onTap: () {
-                    Navigator.pop(context); // Cierra el drawer
-                    Navigator.pushNamed(context, '/settings');
-                  },
-                ),
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),

@@ -21,6 +21,8 @@ class ApiService {
         'clientNumber': '001',
         'status': 'Pendiente',
         'balance': 150.0,
+        'fullName': 'Juan Pérez García',
+        'email': 'juan.perez@example.com',
       };
     }
 

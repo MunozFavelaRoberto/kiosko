@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Text('Estatus: ', style: TextStyle(color: Colors.black)),
+                              const Text('Estatus: '),
                               Text(
                                 payment.status,
                                 style: TextStyle(
@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
             tooltip: 'Menú',
           ),
