@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
@@ -87,12 +88,93 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context, provider, child) {
               if (provider.isLoading) return const Center(child: CircularProgressIndicator());
               return ListView.builder(
+                padding: const EdgeInsets.all(16),
                 itemCount: provider.payments.length,
                 itemBuilder: (context, index) {
                   final payment = provider.payments[index];
-                  return ListTile(
-                    title: Text('Pago ${payment.id}'),
-                    subtitle: Text('Monto: \$${payment.amount} - Ref: ${payment.reference}'),
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Folio: ${payment.folio ?? 'N/A'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text('Fecha: ${payment.date.year}-${payment.date.month.toString().padLeft(2, '0')}-${payment.date.day.toString().padLeft(2, '0')}'),
+                          const SizedBox(height: 8),
+                          Text('Servicio: ${payment.serviceName}'),
+                          const SizedBox(height: 8),
+                          Text('Monto: \$${payment.amount}'),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Text('Estatus: ', style: TextStyle(color: Colors.black)),
+                              Text(
+                                payment.status,
+                                style: TextStyle(
+                                  color: payment.status == 'Pagado' ? Colors.green : Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (payment.status == 'Pagado') ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Descargando Factura XML'))),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset('assets/images/file_xml_box.svg', height: 24, width: 24),
+                                      const SizedBox(height: 4),
+                                      const Text('Factura', textAlign: TextAlign.center),
+                                    ],
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Descargando Factura PDF'))),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.picture_as_pdf, size: 24),
+                                      const SizedBox(height: 4),
+                                      const Text('Factura', textAlign: TextAlign.center),
+                                    ],
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Descargando Recibo PDF'))),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.picture_as_pdf, size: 24),
+                                      const SizedBox(height: 4),
+                                      const Text('Recibo', textAlign: TextAlign.center),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   );
                 },
               );
