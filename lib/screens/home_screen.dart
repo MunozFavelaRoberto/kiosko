@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
+          IconButton.outlined(
             icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
             tooltip: 'Menú',

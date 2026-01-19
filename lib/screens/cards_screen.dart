@@ -27,6 +27,13 @@ class _CardsScreenState extends State<CardsScreen> {
       'expiry': '06/24',
       'isPreferred': false,
     },
+    {
+      'bank': 'Banco 2',
+      'number': '**** **** **** 8931',
+      'holder': 'Yolanda Martínez López',
+      'expiry': '02/26',
+      'isPreferred': false,
+    },
   ];
 
   void _togglePreferred(int index) {
