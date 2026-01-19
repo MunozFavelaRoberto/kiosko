@@ -6,6 +6,7 @@ import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/screens/login_screen.dart';
 import 'package:kiosko/screens/billing_screen.dart';
 import 'package:kiosko/screens/cards_screen.dart';
+import 'package:kiosko/screens/add_card_screen.dart';
 import 'package:kiosko/screens/home_screen.dart';
 import 'package:kiosko/screens/profile_screen.dart';
 import 'package:kiosko/screens/biometric_lock_screen.dart';
@@ -59,6 +60,7 @@ class KioskoApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
         CardsScreen.routeName: (context) => const CardsScreen(),
+        AddCardScreen.routeName: (context) => const AddCardScreen(),
         BillingScreen.routeName: (context) => const BillingScreen(),
       },
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
+import 'package:kiosko/screens/add_card_screen.dart';
 
 class CardsScreen extends StatefulWidget {
   static const routeName = '/cards';
@@ -11,7 +12,7 @@ class CardsScreen extends StatefulWidget {
 }
 
 class _CardsScreenState extends State<CardsScreen> {
-  // Datos hardcodeados de tarjetas
+  // Datos hardcodeados de las tarjetas
   final List<Map<String, dynamic>> _cards = [
     {
       'bank': 'Banco Nacional',
@@ -36,16 +37,90 @@ class _CardsScreenState extends State<CardsScreen> {
     },
   ];
 
-  void _togglePreferred(int index) {
+  void _togglePreferred(int index) async {
+    final card = _cards[index];
+    final isCurrentlyPreferred = card['isPreferred'];
+    final hasOtherPreferred = _cards.any((c) => c['isPreferred'] && c != card);
+
+    if (!isCurrentlyPreferred && hasOtherPreferred) {
+      // Si hay otra favorita y quiere marcar esta, confirmar cambio
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cambiar tarjeta favorita'),
+          content: const Text('¿Quieres marcar esta tarjeta como favorita? La tarjeta actualmente favorita será desmarcada.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    } else if (!isCurrentlyPreferred) {
+      // Marcar como favorita sin otras
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Marcar como favorita'),
+          content: const Text('¿Quieres marcar esta tarjeta como favorita?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    } else {
+      // Desmarcar
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Desmarcar favorita'),
+          content: const Text('¿Quieres desmarcar esta tarjeta como favorita?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
     setState(() {
-      // Si se marca como preferida, se desmarcan las otras
-      if (!_cards[index]['isPreferred']) {
+      if (!isCurrentlyPreferred) {
+        // Marcar esta como favorita, desmarcar otras
         for (int i = 0; i < _cards.length; i++) {
           _cards[i]['isPreferred'] = false;
         }
       }
-      _cards[index]['isPreferred'] = !_cards[index]['isPreferred'];
+      _cards[index]['isPreferred'] = !isCurrentlyPreferred;
     });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isCurrentlyPreferred ? 'Tarjeta desmarcada como favorita' : 'Tarjeta marcada como favorita'),
+        ),
+      );
+    }
   }
 
   void _deleteCard(int index) async {
@@ -80,10 +155,7 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   void _addCard() {
-    // Simulación de agregar tarjeta
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad para agregar tarjeta próximamente')),
-    );
+    Navigator.pushNamed(context, AddCardScreen.routeName);
   }
 
   @override
