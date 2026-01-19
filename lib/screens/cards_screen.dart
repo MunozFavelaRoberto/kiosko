@@ -12,7 +12,7 @@ class CardsScreen extends StatefulWidget {
 
 class _CardsScreenState extends State<CardsScreen> {
   // Datos hardcodeados de tarjetas
-  List<Map<String, dynamic>> _cards = [
+  final List<Map<String, dynamic>> _cards = [
     {
       'bank': 'Banco Nacional',
       'number': '**** **** **** 1234',
@@ -31,7 +31,7 @@ class _CardsScreenState extends State<CardsScreen> {
 
   void _togglePreferred(int index) {
     setState(() {
-      // Si se marca como preferida, desmarcar las otras
+      // Si se marca como preferida, se desmarcan las otras
       if (!_cards[index]['isPreferred']) {
         for (int i = 0; i < _cards.length; i++) {
           _cards[i]['isPreferred'] = false;
@@ -64,9 +64,11 @@ class _CardsScreenState extends State<CardsScreen> {
       setState(() {
         _cards.removeAt(index);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tarjeta eliminada')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tarjeta eliminada')),
+        );
+      }
     }
   }
 
@@ -112,22 +114,10 @@ class _CardsScreenState extends State<CardsScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          card['isPreferred'] ? Icons.star : Icons.star_border,
-                                          color: card['isPreferred'] ? Colors.amber : Colors.grey,
-                                        ),
-                                        onPressed: () => _togglePreferred(index),
-                                        tooltip: 'Marcar como preferida',
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () => _deleteCard(index),
-                                        tooltip: 'Eliminar tarjeta',
-                                      ),
-                                    ],
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _deleteCard(index),
+                                    tooltip: 'Eliminar tarjeta',
                                   ),
                                 ],
                               ),
@@ -140,9 +130,18 @@ class _CardsScreenState extends State<CardsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text('Titular: ${card['holder']}'),
+                              Text('${card['holder']}'),
                               const SizedBox(height: 8),
-                              Text('Vence: ${card['expiry']}'),
+                              Text('${card['expiry']}'),
+                              const SizedBox(height: 12),
+                              IconButton(
+                                icon: Icon(
+                                  card['isPreferred'] ? Icons.star : Icons.star_border,
+                                  color: card['isPreferred'] ? Colors.amber : Colors.grey,
+                                ),
+                                onPressed: () => _togglePreferred(index),
+                                tooltip: 'Marcar como preferida',
+                              ),
                             ],
                           ),
                         ),
