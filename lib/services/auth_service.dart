@@ -3,9 +3,12 @@ import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
+import 'package:kiosko/models/auth_response.dart';
+import 'package:kiosko/services/api_service.dart';
 
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
+  final ApiService _apiService = ApiService();
 
   // --- BIOMETRÍA ---
 
@@ -170,12 +173,52 @@ class AuthService {
     return prefs.getBool('isLoggedIn') ?? false;
   }
 
-  //LOGIN HARDCODEADO
-  Future<bool> login(String username, String password) async {
-    if (username == "admin" && password == "admin") {
-      await saveLoginState();
-      return true;
+  Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('authToken', token);
+  }
+
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
+  Future<bool> verifyToken() async {
+    try {
+      final token = await getToken();
+      if (token == null) return false;
+
+      // Intentar llamar a un endpoint que requiera auth
+      final response = await _apiService.get('/user', headers: {
+        'Authorization': 'Bearer $token',
+      });
+
+      // Si la respuesta es exitosa, el token es válido
+      return response != null;
+    } catch (e) {
+      debugPrint('Token inválido: $e');
+      return false;
     }
-    return false;
+  }
+
+  Future<AuthResponse?> login(String email, String password) async {
+    try {
+      final response = await _apiService.post('/login', body: {
+        'email': email,
+        'password': password,
+      });
+
+      if (response != null) {
+        final authResponse = AuthResponse.fromJson(response);
+        // Guardar token y estado de login
+        await _saveToken(authResponse.data.auth.token);
+        await saveLoginState();
+        return authResponse;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error en login: $e');
+      return null;
+    }
   }
 }

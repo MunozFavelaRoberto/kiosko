@@ -49,24 +49,32 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
     if (_authenticating) return;
     setState(() => _authenticating = true);
 
+    bool authSuccess = false;
+
     if (_primaryBiometric != null) {
-      final success = await _authService.authenticateWithType(_primaryBiometric!.type);
-      
-      if (!mounted) return;
-      setState(() => _authenticating = false);
-      
-      if (success) {
+      authSuccess = await _authService.authenticateWithType(_primaryBiometric!.type);
+    } else {
+      authSuccess = await _authService.authenticate();
+    }
+
+    if (!mounted) return;
+    setState(() => _authenticating = false);
+
+    if (authSuccess) {
+      // Verificar que el token API aún sea válido
+      final tokenValid = await _authService.verifyToken();
+      if (tokenValid) {
         _onAuthSuccess();
         return;
-      }
-    } else {
-      final success = await _authService.authenticate();
-      
-      if (!mounted) return;
-      setState(() => _authenticating = false);
-      
-      if (success) {
-        _onAuthSuccess();
+      } else {
+        // Token inválido, forzar login con contraseña
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sesión expirada. Inicia sesión con contraseña.')),
+        );
+        await _authService.logout();
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
         return;
       }
     }

@@ -1,16 +1,30 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 class ApiService {
   final String baseUrl;
   final http.Client _client;
 
-  // Cambia esta URL por la de tu API
-  static const String baseUrlApi = 'https://api.example.com'; // Reemplaza con tu enlace
+  // URL de la API real
+  static const String baseUrlApi = 'https://apipagoselectronicos.svr.com.mx/api';
 
   ApiService({this.baseUrl = baseUrlApi, http.Client? client})
-      : _client = client ?? http.Client();
+      : _client = client ?? _createHttpClient();
+
+  static http.Client _createHttpClient() {
+    // Ignorar errores de certificado SSL
+    // Esto permite probar con certificados autofirmados o inválidos:
+
+    // ❌ para DESARROLLO:
+    final ioClient = HttpClient();
+    ioClient.badCertificateCallback = (cert, host, port) => true;
+    return IOClient(ioClient);
+
+    // ✅  Para PRODUCCION: descomentar esta línea y eliminar el código de arriba
+    // return http.Client();
+  }
 
   // Método GET
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
@@ -91,9 +105,13 @@ class ApiService {
   Future<dynamic> post(String endpoint, {Map<String, String>? headers, dynamic body}) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
+      final defaultHeaders = {
+        'Content-Type': 'application/json',
+        ...?headers,
+      };
       final response = await _client.post(
         uri,
-        headers: headers,
+        headers: defaultHeaders,
         body: body != null ? jsonEncode(body) : null,
       ).timeout(const Duration(seconds: 10));
 

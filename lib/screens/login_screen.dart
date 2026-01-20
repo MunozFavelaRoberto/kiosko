@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // Instancia de autenticación
   late final AuthService _authService;
-  
+
   // Controladores para capturar texto de los campos
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Variable indicador de carga
   bool _isLoading = false;
   bool _showBiometricButton = false;
+  bool _obscurePassword = true;
   List<BiometricTypeInfo> _enabledBiometrics = [];
 
   @override
@@ -43,12 +44,12 @@ class _LoginScreenState extends State<LoginScreen> {
   // Login por botón
   void _loginWithPassword() async {
     setState(() => _isLoading = true);
-    final user = _userController.text.trim();
+    final email = _userController.text.trim();
     final pass = _passController.text.trim();
 
-    if (user.isNotEmpty && pass.isNotEmpty) {
-      bool loggedIn = await _authService.login(user, pass);
-      if (loggedIn) {
+    if (email.isNotEmpty && pass.isNotEmpty) {
+      final response = await _authService.login(email, pass);
+      if (response != null) {
         await _handleLoginSuccess();
       } else {
         if (!mounted) return;
@@ -151,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Image.asset('assets/images/svr_logo.png', height: 100, width: 100),
                       const SizedBox(height: 40),
 
-                      // Campo Usuario
+                      // Campo Email
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -160,11 +161,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: TextField(
                           controller: _userController,
                           decoration: InputDecoration(
-                            hintText: 'Usuario',
+                            hintText: 'Email',
                             hintStyle: const TextStyle(color: Colors.black54),
-                            prefixIcon: Icon(Icons.person_outline, color: Colors.black54),
+                            prefixIcon: Icon(Icons.email_outlined, color: Colors.black54),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
+                          keyboardType: TextInputType.emailAddress,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -177,11 +179,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: TextField(
                           controller: _passController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             hintText: 'Contraseña',
                             hintStyle: const TextStyle(color: Colors.black54),
                             prefixIcon: Icon(Icons.lock_outline, color: Colors.black54),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                color: Colors.black54,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
