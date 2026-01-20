@@ -134,7 +134,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -171,7 +171,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 ),
                 textCapitalization: TextCapitalization.words,
                 validator: _validateHolderName,
@@ -181,14 +181,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedMonth,
+                      initialValue: _selectedMonth,
                       decoration: InputDecoration(
                         labelText: 'Mes',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       ),
                       items: _months.map((month) {
                         return DropdownMenuItem(
@@ -207,14 +207,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedYear,
+                      initialValue: _selectedYear,
                       decoration: InputDecoration(
                         labelText: 'Año',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       ),
                       items: _years.map((year) {
                         return DropdownMenuItem(
@@ -259,7 +259,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [

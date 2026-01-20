@@ -148,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         onChanged: (value) {
@@ -200,9 +200,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (newEmail != null) {
       // Aquí podrías llamar a una API para actualizar el email
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Correo actualizado a: $newEmail')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Correo actualizado a: $newEmail')),
+        );
+      }
     }
   }
 
