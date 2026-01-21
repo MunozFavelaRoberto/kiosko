@@ -15,16 +15,36 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final dataProvider = Provider.of<DataProvider>(context, listen: false);
-      dataProvider.fetchUser();
-      dataProvider.fetchCategories();
-      dataProvider.fetchServices();
-      dataProvider.fetchPayments();
+
+      // Ejecutar fetches en paralelo
+      final futures = [
+        dataProvider.fetchUser(),
+        dataProvider.fetchCategories(),
+        dataProvider.fetchServices(),
+        dataProvider.fetchPayments(),
+      ];
+
+      try {
+        await Future.wait(futures);
+      } catch (e) {
+        debugPrint('Error cargando datos: $e');
+        if (mounted) {
+          setState(() => _hasError = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al cargar datos. Verifica tu conexión.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -36,7 +56,46 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: Consumer<DataProvider>(
             builder: (context, provider, child) {
-              if (provider.isLoading || provider.user == null) return const Center(child: CircularProgressIndicator());
+              if (_hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Error al cargar datos',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Verifica tu conexión a internet',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() => _hasError = false);
+                          // Reintentar carga
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                            dataProvider.fetchUser();
+                            dataProvider.fetchCategories();
+                            dataProvider.fetchServices();
+                            dataProvider.fetchPayments();
+                          });
+                        },
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (provider.isLoading || provider.user == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               final user = provider.user!;
               final status = user.balance == 0 ? 'Pagado' : 'Pendiente';
               final statusColor = status == 'Pagado' ? Colors.green : Colors.yellow.shade800;

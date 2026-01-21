@@ -4,9 +4,16 @@ import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
 import 'package:kiosko/models/user.dart';
 import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/services/mock_api_service.dart';
+import 'package:kiosko/utils/config.dart';
 
 class DataProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  late final dynamic _apiService;
+
+  DataProvider() {
+    // Elegir API service basado en configuración
+    _apiService = Config.isDevelopment ? MockApiService() : ApiService();
+  }
 
   List<Category> _categories = [];
   List<Service> _services = [];

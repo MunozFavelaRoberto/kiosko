@@ -8,7 +8,11 @@ import 'package:kiosko/services/api_service.dart';
 
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
-  final ApiService _apiService = ApiService();
+  late final ApiService _apiService;
+
+  AuthService() {
+    _apiService = ApiService(baseUrl: 'https://apipagoselectronicos.svr.com.mx/api');
+  }
 
   // --- BIOMETRÍA ---
 

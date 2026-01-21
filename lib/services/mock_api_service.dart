@@ -2,15 +2,75 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
-class ApiService {
+class MockApiService {
   final String baseUrl;
   final http.Client _client;
 
-  ApiService({this.baseUrl = 'https://apipagoselectronicos.svr.com.mx/api', http.Client? client})
+  MockApiService({this.baseUrl = 'https://apipagoselectronicos.svr.com.mx/api', http.Client? client})
       : _client = client ?? http.Client();
 
-  // Método GET
+  // Método GET con simulaciones
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+    // Simulación para '/user' sin hacer petición real
+    if (endpoint == '/user') {
+      await Future.delayed(const Duration(seconds: 1)); // Simular delay
+      return {
+        'clientNumber': '001',
+        'status': 'Pendiente',
+        'balance': 150.0,
+        'fullName': 'Juan Pérez García',
+        'email': 'juan.perez@example.com',
+      };
+    }
+
+    // Simulación para '/payments'
+    if (endpoint == '/payments') {
+      await Future.delayed(const Duration(seconds: 1));
+      return [
+        {
+          'id': 1,
+          'service_id': 1,
+          'service_name': 'Luz',
+          'amount': 200.0,
+          'reference': 'REF001',
+          'date': '2023-10-01T00:00:00Z',
+          'status': 'Pagado',
+          'folio': 'FOL001',
+        },
+        {
+          'id': 2,
+          'service_id': 2,
+          'service_name': 'Agua',
+          'amount': 150.0,
+          'reference': 'REF002',
+          'date': '2023-10-15T00:00:00Z',
+          'status': 'Pendiente',
+          'folio': 'FOL002',
+        },
+        {
+          'id': 3,
+          'service_id': 3,
+          'service_name': 'Teléfono',
+          'amount': 100.0,
+          'reference': 'REF003',
+          'date': '2023-09-20T00:00:00Z',
+          'status': 'Pagado',
+          'folio': 'FOL003',
+        },
+        {
+          'id': 4,
+          'service_id': 4,
+          'service_name': 'Internet',
+          'amount': 250.0,
+          'reference': 'REF004',
+          'date': '2023-11-05T00:00:00Z',
+          'status': 'Pendiente',
+          'folio': null,
+        },
+      ];
+    }
+
+    // Para otros endpoints, intentar llamada real
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
       final response = await _client.get(uri, headers: headers).timeout(const Duration(seconds: 10));
