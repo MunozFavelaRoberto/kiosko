@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:kiosko/utils/config.dart';
 
 class MockApiService {
   final String baseUrl;
   final http.Client _client;
 
-  MockApiService({this.baseUrl = 'https://apipagoselectronicos.svr.com.mx/api', http.Client? client})
+  MockApiService({this.baseUrl = Config.apiBaseUrl, http.Client? client})
       : _client = client ?? http.Client();
 
   // Método GET con simulaciones

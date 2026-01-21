@@ -5,13 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 import 'package:kiosko/models/auth_response.dart';
 import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/utils/config.dart';
 
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
   late final ApiService _apiService;
 
   AuthService() {
-    _apiService = ApiService(baseUrl: 'https://apipagoselectronicos.svr.com.mx/api');
+    _apiService = ApiService(baseUrl: Config.apiBaseUrl);
   }
 
   // --- BIOMETRÍA ---

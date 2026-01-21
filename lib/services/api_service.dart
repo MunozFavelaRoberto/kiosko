@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:kiosko/utils/config.dart';
 
 class ApiService {
   final String baseUrl;
   final http.Client _client;
 
-  ApiService({this.baseUrl = 'https://apipagoselectronicos.svr.com.mx/api', http.Client? client})
+  ApiService({this.baseUrl = Config.apiBaseUrl, http.Client? client})
       : _client = client ?? http.Client();
 
   // Método GET
