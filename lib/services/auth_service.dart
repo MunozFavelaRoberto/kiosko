@@ -5,15 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 import 'package:kiosko/models/auth_response.dart';
 import 'package:kiosko/services/api_service.dart';
-import 'package:kiosko/utils/config.dart';
 
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
-  late final ApiService _apiService;
+  final ApiService _apiService = ApiService();
+  UserData? _currentUser;
 
-  AuthService() {
-    _apiService = ApiService(baseUrl: Config.apiBaseUrl);
-  }
+  UserData? get currentUser => _currentUser;
 
   // --- BIOMETRÍA ---
 
@@ -171,6 +169,8 @@ class AuthService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
+    await prefs.remove('authToken');
+    _currentUser = null;
   }
 
   Future<bool> isLoggedIn() async {
@@ -208,15 +208,19 @@ class AuthService {
 
   Future<AuthResponse?> login(String email, String password) async {
     try {
+      debugPrint('Intentando login con email: $email');
       final response = await _apiService.post('/login', body: {
         'email': email,
         'password': password,
       });
+      debugPrint('Respuesta del login: $response');
 
       if (response != null) {
         final authResponse = AuthResponse.fromJson(response);
-        // Guardar token y estado de login
+        // Guardar token, datos del usuario y estado de login
         await _saveToken(authResponse.data.auth.token);
+        _currentUser = authResponse.data.auth.user;
+        debugPrint('Usuario guardado: ${_currentUser?.fullName} - ${_currentUser?.email}');
         await saveLoginState();
         return authResponse;
       }

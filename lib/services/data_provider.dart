@@ -4,16 +4,13 @@ import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
 import 'package:kiosko/models/user.dart';
 import 'package:kiosko/services/api_service.dart';
-import 'package:kiosko/services/mock_api_service.dart';
-import 'package:kiosko/utils/config.dart';
+import 'package:kiosko/services/auth_service.dart';
 
 class DataProvider extends ChangeNotifier {
-  late final dynamic _apiService;
+  final ApiService _apiService = ApiService();
+  final AuthService? _authService;
 
-  DataProvider() {
-    // Elegir API service basado en configuración
-    _apiService = Config.isDevelopment ? MockApiService() : ApiService();
-  }
+  DataProvider({AuthService? authService}) : _authService = authService;
 
   List<Category> _categories = [];
   List<Service> _services = [];
@@ -78,10 +75,39 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await _apiService.get('/user');
-      _user = User.fromJson(data);
+      // Usar datos del usuario ya logueado (del AuthService)
+      final currentUser = _authService?.currentUser;
+      if (currentUser != null) {
+        debugPrint('Usando datos del usuario logueado: ${currentUser.fullName}');
+        _user = User(
+          clientNumber: currentUser.uiid, // Usar uiid como clientNumber
+          status: 'Activo',
+          balance: 0.0,
+          fullName: currentUser.fullName,
+          email: currentUser.email,
+        );
+        debugPrint('Usuario creado desde login: ${_user!.fullName} - ${_user!.email}');
+      } else {
+        debugPrint('No hay usuario logueado, usando fallback');
+        // Fallback si no hay usuario logueado
+        _user = User(
+          clientNumber: '1234987',
+          status: 'Activo',
+          balance: 0.0,
+          fullName: 'Usuario',
+          email: 'usuario@email.com',
+        );
+      }
     } catch (e) {
       debugPrint('Error fetching user: $e');
+      // Fallback en caso de error
+      _user = User(
+        clientNumber: '1234987',
+        status: 'Activo',
+        balance: 0.0,
+        fullName: 'Usuario',
+        email: 'usuario@email.com',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();

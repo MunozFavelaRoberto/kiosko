@@ -16,6 +16,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   late final AuthService _authService;
   bool _authenticating = false;
   int _failedAttempts = 0;
+  static const int _maxFailedAttempts = 5;
   
   BiometricTypeInfo? _primaryBiometric;
 
@@ -80,7 +81,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
 
     if(mounted) {
       setState(() => _failedAttempts += 1);
-      if (_failedAttempts >= 5) {
+      if (_failedAttempts >= _maxFailedAttempts) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demasiados intentos. Usa contraseña.')));
       }
     }
@@ -139,7 +140,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                     : 'Usar $biometricName'),
               ),
               const SizedBox(height: 12),
-              if (_failedAttempts >= 5)
+              if (_failedAttempts >= _maxFailedAttempts)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: ElevatedButton(

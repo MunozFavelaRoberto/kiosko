@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/services/data_provider.dart';
-import 'package:kiosko/utils/config.dart' as utils_config;
 import 'package:kiosko/screens/login_screen.dart';
 import 'package:kiosko/screens/billing_screen.dart';
 import 'package:kiosko/screens/cards_screen.dart';
@@ -18,16 +17,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final themeProvider = ThemeProvider();
   await themeProvider.loadTheme();
-
-  // Mostrar modo actual en consola
-  debugPrint('Modo: ${utils_config.Config.isDevelopment ? 'DESARROLLO' : 'PRODUCCIÓN'}');
-
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         Provider<AuthService>(create: (_) => AuthService()),
-        ChangeNotifierProvider<DataProvider>(create: (_) => DataProvider()),
+        ChangeNotifierProvider<DataProvider>(
+          create: (context) => DataProvider(
+            authService: Provider.of<AuthService>(context, listen: false),
+          ),
+        ),
       ],
       child: const KioskoApp(),
     ),
@@ -36,10 +35,7 @@ Future<void> main() async {
 
 // Navegador global para empujar rutas desde Widgets fuera del árbol
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
-
-// Canal para comunicar con código nativo y recibir eventos de encendido/apagado de pantalla
-// Se usa para detectar bloqueos nativos del dispositivo y forzar autenticación biométrica
-final MethodChannel _screenChannel = MethodChannel('com.example.kiosko/screen');
+const MethodChannel _screenChannel = MethodChannel('com.example.kiosko/screen');
 
 class KioskoApp extends StatelessWidget {
   const KioskoApp({super.key});
