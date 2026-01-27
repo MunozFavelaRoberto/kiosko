@@ -133,4 +133,10 @@ class DataProvider extends ChangeNotifier {
   List<Service> getServicesByCategory(int categoryId) {
     return _services.where((service) => service.categoryId == categoryId).toList();
   }
+
+  // Método para actualizar el usuario
+  void updateUser(User newUser) {
+    _user = newUser;
+    notifyListeners();
+  }
 }

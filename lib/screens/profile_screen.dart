@@ -4,7 +4,9 @@ import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
+import 'package:kiosko/models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
@@ -17,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final AuthService _authService;
+  late final ApiService _apiService;
   bool _loading = true;
   List<BiometricTypeInfo> _availableBiometrics = [];
   Map<String, bool> _biometricStates = {};
@@ -25,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _authService = Provider.of<AuthService>(context, listen: false);
+    _apiService = ApiService();
     _loadBiometrics();
   }
 
@@ -94,7 +98,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editEmail() async {
-    final user = Provider.of<DataProvider>(context, listen: false).user;
+    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+    final user = dataProvider.user;
     if (user == null) return;
 
     final controller = TextEditingController(text: user.email);
@@ -199,11 +204,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (newEmail != null) {
-      // Aquí podrías llamar a una API para actualizar el email
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Correo actualizado a: $newEmail')),
-        );
+      // Llamar a la API para actualizar el email
+      final token = await _authService.getToken();
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error: No hay token de autenticación')),
+          );
+        }
+        return;
+      }
+
+      try {
+        final response = await _apiService.post('/client/profile', headers: {
+          'Authorization': 'Bearer $token',
+        }, body: {
+          'email': newEmail,
+        });
+
+        if (response != null && response['msg'] == 'Registro editado correctamente') {
+          // Actualizar el usuario localmente
+          if (dataProvider.user != null) {
+            final updatedUser = User(
+              clientNumber: dataProvider.user!.clientNumber,
+              status: dataProvider.user!.status,
+              balance: dataProvider.user!.balance,
+              fullName: dataProvider.user!.fullName,
+              email: newEmail,
+            );
+            dataProvider.updateUser(updatedUser);
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Correo actualizado correctamente')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error al actualizar el correo')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $e')),
+          );
+        }
       }
     }
   }
