@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -201,7 +203,13 @@ class AuthService {
       // Si la respuesta es exitosa, el token es válido
       return response != null;
     } catch (e) {
-      debugPrint('Token inválido: $e');
+      debugPrint('Error verificando token: $e');
+      // Si es error de red, asumir token válido para mejor UX (evitar logout por conectividad)
+      if (e is SocketException || e is http.ClientException) {
+        debugPrint('Error de red, asumiendo token válido');
+        return true;
+      }
+      // Para otros errores (como 401), token inválido
       return false;
     }
   }

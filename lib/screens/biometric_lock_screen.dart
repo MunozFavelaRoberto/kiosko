@@ -61,22 +61,10 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
     setState(() => _authenticating = false);
 
     if (authSuccess) {
-      // Verificar que el token API aún sea válido
-      final tokenValid = await _authService.verifyToken();
-      if (tokenValid) {
-        _onAuthSuccess();
-        return;
-      } else {
-        // Token inválido, forzar login con contraseña
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sesión expirada. Inicia sesión con contraseña.')),
-        );
-        await _authService.logout();
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-        return;
-      }
+      // Autenticación biométrica exitosa, proceder sin verificar token adicionalmente
+      // para mejor UX (el token se verificará en llamadas API posteriores si es necesario)
+      _onAuthSuccess();
+      return;
     }
 
     if(mounted) {
