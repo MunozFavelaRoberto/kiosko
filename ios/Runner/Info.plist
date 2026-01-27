@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Esta aplicación utiliza Face ID para la autenticación biométrica</string>
 </dict>
 </plist>
