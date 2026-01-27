@@ -71,12 +71,27 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loginWithBiometrics(BiometricTypeInfo biometric) async {
     setState(() => _isLoading = true);
 
+    // Primero verificar si hay un token guardado y es válido
+    final tokenValid = await _authService.verifyToken();
+    if (!tokenValid) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay sesión activa. Inicia sesión con email y contraseña.')),
+      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
     // Verificar que la biometría sigue habilitada
     final isEnabled = await _authService.isBiometricEnabled(biometric.type);
-    
+
     if (isEnabled) {
       bool authenticated = await _authService.authenticateWithType(biometric.type);
       if (authenticated) {
+        // Restaurar el estado de login ya que el token es válido
+        await _authService.saveLoginState();
         await _handleLoginSuccess();
       } else {
         if (!mounted) return;
@@ -98,27 +113,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _initBiometricVisibility() async {
     final canCheck = await _authService.canCheckBiometrics;
-    
+    final tokenValid = await _authService.verifyToken();
+
     List<BiometricTypeInfo> enabledBiometrics = [];
-    if (canCheck) {
+    if (canCheck && tokenValid) {
       final available = await _authService.getAvailableBiometrics();
-      
+
       // Normalizar: eliminar duplicados de strong/weak
       final addedTypes = <String>{}; // track por displayName
-      
+
       for (final biometric in available) {
         // Verificar si está habilitada
         final isEnabled = await _authService.isBiometricEnabled(biometric.type);
         if (!isEnabled) continue;
-        
+
         // Evitar duplicados
         if (addedTypes.contains(biometric.displayName)) continue;
-        
+
         enabledBiometrics.add(biometric);
         addedTypes.add(biometric.displayName);
       }
     }
-    
+
     if (!mounted) return;
     setState(() {
       _showBiometricButton = enabledBiometrics.isNotEmpty;

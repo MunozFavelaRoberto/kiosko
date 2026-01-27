@@ -75,39 +75,34 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Usar datos del usuario ya logueado (del AuthService)
+      // Llamar a la API para obtener datos actualizados del usuario
+      final token = await _authService?.getToken();
+      if (token != null) {
+        final data = await _apiService.get('/user', headers: {
+          'Authorization': 'Bearer $token',
+        });
+        _user = User.fromJson(data);
+        debugPrint('Usuario obtenido de API: ${_user!.fullName} - ${_user!.email}');
+      } else {
+        throw Exception('No hay token disponible');
+      }
+    } catch (e) {
+      debugPrint('Error fetching user: $e');
+      // Si falla, intentar usar datos del login si están disponibles
       final currentUser = _authService?.currentUser;
       if (currentUser != null) {
-        debugPrint('Usando datos del usuario logueado: ${currentUser.fullName}');
         _user = User(
-          clientNumber: currentUser.uiid, // Usar uiid como clientNumber
+          clientNumber: currentUser.uiid,
           status: 'Activo',
           balance: 0.0,
           fullName: currentUser.fullName,
           email: currentUser.email,
         );
-        debugPrint('Usuario creado desde login: ${_user!.fullName} - ${_user!.email}');
+        debugPrint('Usando datos del login como fallback: ${_user!.fullName}');
       } else {
-        debugPrint('No hay usuario logueado, usando fallback');
-        // Fallback si no hay usuario logueado
-        _user = User(
-          clientNumber: '1234987',
-          status: 'Activo',
-          balance: 0.0,
-          fullName: 'Usuario',
-          email: 'usuario@email.com',
-        );
+        // Sin datos disponibles
+        _user = null;
       }
-    } catch (e) {
-      debugPrint('Error fetching user: $e');
-      // Fallback en caso de error
-      _user = User(
-        clientNumber: '1234987',
-        status: 'Activo',
-        balance: 0.0,
-        fullName: 'Usuario',
-        email: 'usuario@email.com',
-      );
     } finally {
       _isLoading = false;
       notifyListeners();
