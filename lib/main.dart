@@ -5,6 +5,7 @@ import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/screens/login_screen.dart';
 import 'package:kiosko/screens/billing_screen.dart';
+import 'package:kiosko/screens/edit_billing_screen.dart';
 import 'package:kiosko/screens/cards_screen.dart';
 import 'package:kiosko/screens/add_card_screen.dart';
 import 'package:kiosko/screens/home_screen.dart';
@@ -66,6 +67,7 @@ class KioskoApp extends StatelessWidget {
         CardsScreen.routeName: (context) => const CardsScreen(),
         AddCardScreen.routeName: (context) => const AddCardScreen(),
         BillingScreen.routeName: (context) => const BillingScreen(),
+        EditBillingScreen.routeName: (context) => const EditBillingScreen(),
       },
     );
   }
