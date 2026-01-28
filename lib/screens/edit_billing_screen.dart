@@ -13,9 +13,9 @@ class EditBillingScreen extends StatefulWidget {
 
 class _EditBillingScreenState extends State<EditBillingScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _rfcController = TextEditingController(text: 'XAXX010101000');
-  final _razonSocialController = TextEditingController(text: 'CLIENTE DE PRUEBA S.A. DE C.V.');
-  final _codigoPostalController = TextEditingController(text: '12345');
+  final _rfcController = TextEditingController();
+  final _razonSocialController = TextEditingController();
+  final _codigoPostalController = TextEditingController();
   String? _selectedRegimen;
   String? _selectedUsoCFDI;
 
@@ -23,6 +23,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
   late final ApiService _apiService;
   List<Map<String, dynamic>> _regimenes = [];
   List<Map<String, dynamic>> _usosCFDI = [];
+  Map<String, dynamic>? _currentFiscalData;
   bool _loadingCatalogs = true;
 
   @override
@@ -56,20 +57,48 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
         if (usoResponse != null && usoResponse['data'] != null) {
           _usosCFDI = List<Map<String, dynamic>>.from(usoResponse['data']['items']);
         }
+
+        final fiscalResponse = await _apiService.get('/client/fiscal_data', headers: {'Authorization': 'Bearer $token'});
+        if (fiscalResponse != null && fiscalResponse['data'] != null) {
+          _currentFiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
+        }
       }
     } catch (e) {
-      debugPrint('Error loading catalogs: $e');
+      debugPrint('Error loading data: $e');
     }
 
     if (mounted) {
+      // Prefill with current data
+      if (_currentFiscalData != null) {
+        _rfcController.text = _currentFiscalData!['code'] ?? '';
+        _razonSocialController.text = _currentFiscalData!['name'] ?? '';
+        _codigoPostalController.text = _currentFiscalData!['zip'] ?? '';
+      }
+
       setState(() {
         _loadingCatalogs = false;
-        if (_regimenes.isNotEmpty) {
-          final name = _regimenes[0]['name'].length > 40 ? _regimenes[0]['name'].substring(0, 40) + '...' : _regimenes[0]['name'];
+        // Set selected values
+        if (_currentFiscalData != null && _regimenes.isNotEmpty) {
+          final regimen = _regimenes.firstWhere(
+            (reg) => reg['id'] == _currentFiscalData!['fiscal_regime_id'],
+            orElse: () => _regimenes[0],
+          );
+          final name = regimen['name'].length > 30 ? regimen['name'].substring(0, 30) + '...' : regimen['name'];
+          _selectedRegimen = '${regimen['code']} - $name';
+        } else if (_regimenes.isNotEmpty) {
+          final name = _regimenes[0]['name'].length > 30 ? _regimenes[0]['name'].substring(0, 30) + '...' : _regimenes[0]['name'];
           _selectedRegimen = '${_regimenes[0]['code']} - $name';
         }
-        if (_usosCFDI.isNotEmpty) {
-          final name = _usosCFDI[0]['name'].length > 40 ? _usosCFDI[0]['name'].substring(0, 40) + '...' : _usosCFDI[0]['name'];
+
+        if (_currentFiscalData != null && _usosCFDI.isNotEmpty) {
+          final uso = _usosCFDI.firstWhere(
+            (u) => u['id'] == _currentFiscalData!['cfdi_usage_id'],
+            orElse: () => _usosCFDI[0],
+          );
+          final name = uso['name'].length > 30 ? uso['name'].substring(0, 30) + '...' : uso['name'];
+          _selectedUsoCFDI = '${uso['code']} - $name';
+        } else if (_usosCFDI.isNotEmpty) {
+          final name = _usosCFDI[0]['name'].length > 30 ? _usosCFDI[0]['name'].substring(0, 30) + '...' : _usosCFDI[0]['name'];
           _selectedUsoCFDI = '${_usosCFDI[0]['code']} - $name';
         }
       });
