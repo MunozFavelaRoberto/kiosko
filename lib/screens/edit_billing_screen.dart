@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/api_service.dart';
@@ -132,13 +133,102 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
     return null;
   }
 
-  void _saveBillingInfo() {
+
+  void _saveBillingInfo() async {
     if (_formKey.currentState!.validate()) {
-      // Aquí iría la lógica para guardar la información
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Información fiscal actualizada')),
-      );
-      Navigator.pop(context);
+      final token = await _authService.getToken();
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error: No hay token de autenticación')),
+          );
+        }
+        return;
+      }
+
+      // Find ids from selected values
+      int? fiscalRegimeId;
+      int? cfdiUsageId;
+
+      if (_selectedRegimen != null && _regimenes.isNotEmpty) {
+        final selectedParts = _selectedRegimen!.split(' - ');
+        if (selectedParts.length >= 2) {
+          final code = selectedParts[0];
+          final regimen = _regimenes.firstWhere(
+            (reg) => reg['code'] == code,
+            orElse: () => {},
+          );
+          fiscalRegimeId = regimen['id'];
+        }
+      }
+
+      if (_selectedUsoCFDI != null && _usosCFDI.isNotEmpty) {
+        final selectedParts = _selectedUsoCFDI!.split(' - ');
+        if (selectedParts.length >= 2) {
+          final code = selectedParts[0];
+          final uso = _usosCFDI.firstWhere(
+            (u) => u['code'] == code,
+            orElse: () => {},
+          );
+          cfdiUsageId = uso['id'];
+        }
+      }
+
+      if (fiscalRegimeId == null || cfdiUsageId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error: No se pudieron determinar los IDs')),
+          );
+        }
+        return;
+      }
+
+      try {
+        final response = await _apiService.post('/client/fiscal_data', headers: {
+          'Authorization': 'Bearer $token',
+        }, body: {
+          'code': _rfcController.text.trim(),
+          'name': _razonSocialController.text.trim(),
+          'zip': _codigoPostalController.text.trim(),
+          'fiscal_regime_id': fiscalRegimeId,
+          'cfdi_usage_id': cfdiUsageId,
+        });
+
+        if (response != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(response['msg'] ?? 'Operación completada')),
+            );
+            if (response['msg'] == 'Registro editado correctamente') {
+              Navigator.pop(context);
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error al actualizar la información fiscal')),
+            );
+          }
+        }
+      } catch (e) {
+        String errorMsg = 'Error de conexión';
+        final errorStr = e.toString();
+        if (errorStr.contains('Error HTTP')) {
+          try {
+            final startIndex = errorStr.indexOf('{');
+            if (startIndex != -1) {
+              final errorBody = errorStr.substring(startIndex);
+              final errorJson = jsonDecode(errorBody);
+              errorMsg = errorJson['msg'] ?? errorMsg;
+            }
+          } catch (_) {}
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg)),
+          );
+        }
+      }
     }
   }
 
@@ -212,6 +302,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                 const Center(child: CircularProgressIndicator())
               else
                 FormField<String>(
+                  initialValue: _selectedRegimen,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Seleccione un Régimen Fiscal';
@@ -244,6 +335,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                 const Center(child: CircularProgressIndicator())
               else
                 FormField<String>(
+                  initialValue: _selectedUsoCFDI,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Seleccione un Uso de CFDI';

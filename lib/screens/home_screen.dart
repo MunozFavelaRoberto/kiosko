@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Text('Saldo:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                       Text('\$${user.balance}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 32),
                       ElevatedButton(
