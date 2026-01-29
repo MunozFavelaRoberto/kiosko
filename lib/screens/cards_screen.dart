@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
@@ -55,8 +56,41 @@ class _CardsScreenState extends State<CardsScreen> {
     }
   }
 
-  void _togglePreferred(CardModel card) {
-    _showNotImplemented('Marcar como favorita');
+  Future<void> _togglePreferred(CardModel card) async {
+    final authService = context.read<AuthService>();
+    final apiService = ApiService();
+    final token = await authService.getToken();
+    final headers = {'Authorization': 'Bearer $token'};
+    final body = {'user_card_id': card.id};
+
+    try {
+      final response = await apiService.post('/client/cards/favorite', headers: headers, body: body);
+      // Reload cards to update the favorite status
+      await _loadCards();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['msg'] ?? 'Tarjeta favorita actualizada')),
+        );
+      }
+    } catch (e) {
+      String errorMsg = 'Error al actualizar favorita';
+      final errorStr = e.toString();
+      if (errorStr.contains('Error HTTP')) {
+        try {
+          final startIndex = errorStr.indexOf('{');
+          if (startIndex != -1) {
+            final errorBody = errorStr.substring(startIndex);
+            final errorJson = jsonDecode(errorBody);
+            errorMsg = errorJson['msg'] ?? errorMsg;
+          }
+        } catch (_) {}
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
+    }
   }
 
   void _deleteCard(CardModel card) {
@@ -192,7 +226,7 @@ class _CardsScreenState extends State<CardsScreen> {
                                                   card.isFavorite == 1 ? Icons.star : Icons.star_border,
                                                   color: card.isFavorite == 1 ? Colors.amber : Colors.grey,
                                                 ),
-                                                onPressed: () => _togglePreferred(card),
+                                                onPressed: () async => await _togglePreferred(card),
                                                 tooltip: 'Marcar como preferida',
                                               ),
                                               IconButton(
