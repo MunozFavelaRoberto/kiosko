@@ -16,12 +16,14 @@ class DataProvider extends ChangeNotifier {
   List<Service> _services = [];
   List<Payment> _payments = [];
   User? _user;
+  double _outstandingAmount = 0.0;
   bool _isLoading = false;
 
   List<Category> get categories => _categories;
   List<Service> get services => _services;
   List<Payment> get payments => _payments;
   User? get user => _user;
+  double get outstandingAmount => _outstandingAmount;
   bool get isLoading => _isLoading;
 
   Future<void> fetchCategories() async {
@@ -70,39 +72,64 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchOutstandingPayments() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await _authService?.getToken();
+      if (token != null) {
+        final data = await _apiService.get('/client/payments/outstanding', headers: {
+          'Authorization': 'Bearer $token',
+        });
+        final paymentsData = data['data'];
+        _outstandingAmount = (paymentsData['total'] as num?)?.toDouble() ?? 0.0;
+      } else {
+        throw Exception('No hay token disponible');
+      }
+    } catch (e) {
+      debugPrint('Error fetching outstanding payments: $e');
+      _outstandingAmount = 0.0;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchUser() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Llamar a la API para obtener datos actualizados del usuario
+      // Llamar a la API para obtener datos del perfil del cliente
       final token = await _authService?.getToken();
       if (token != null) {
-        final data = await _apiService.get('/user', headers: {
+        final data = await _apiService.get('/client/profile', headers: {
           'Authorization': 'Bearer $token',
         });
-        _user = User.fromJson(data);
-        debugPrint('Usuario obtenido de API: ${_user!.fullName} - ${_user!.email}');
+        debugPrint('Profile data: $data');
+        // Usar datos del login como base, pero clientNumber del perfil
+        final currentUser = _authService?.currentUser;
+        if (currentUser != null) {
+          final profileData = data['data']['item'];
+          _user = User(
+            clientNumber: profileData['client_number'] as String? ?? 'N/A',
+            status: 'Activo',
+            balance: 0.0,
+            fullName: currentUser.fullName,
+            email: currentUser.email,
+          );
+          debugPrint('Usuario obtenido de perfil: ${_user!.fullName} - Cliente: ${_user!.clientNumber}');
+        } else {
+          throw Exception('No hay datos de usuario disponibles');
+        }
       } else {
         throw Exception('No hay token disponible');
       }
     } catch (e) {
-      debugPrint('Error fetching user: $e');
-      // Si falla, intentar usar datos del login si están disponibles
-      final currentUser = _authService?.currentUser;
-      if (currentUser != null) {
-        _user = User(
-          clientNumber: currentUser.uiid,
-          status: 'Activo',
-          balance: 0.0,
-          fullName: currentUser.fullName,
-          email: currentUser.email,
-        );
-        debugPrint('Usando datos del login como fallback: ${_user!.fullName}');
-      } else {
-        // Sin datos disponibles
-        _user = null;
-      }
+      debugPrint('Error fetching user profile: $e');
+      // Sin datos disponibles
+      _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();

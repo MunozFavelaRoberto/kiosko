@@ -20,6 +20,7 @@ class CardsScreen extends StatefulWidget {
 class _CardsScreenState extends State<CardsScreen> {
   late List<CardModel> _cards;
   bool _isLoading = true;
+  late AuthService _authService;
 
   static const Map<String, String> brandLogos = {
     'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
@@ -31,13 +32,13 @@ class _CardsScreenState extends State<CardsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _authService = context.read<AuthService>();
     _loadCards();
   }
 
   Future<void> _loadCards() async {
-    final authService = context.read<AuthService>();
     final apiService = ApiService();
-    final token = await authService.getToken();
+    final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
     try {
       _cards = await apiService.getCards(headers: headers);
@@ -57,9 +58,8 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Future<void> _togglePreferred(CardModel card) async {
-    final authService = context.read<AuthService>();
     final apiService = ApiService();
-    final token = await authService.getToken();
+    final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
     final body = {'user_card_id': card.id};
 
@@ -93,17 +93,61 @@ class _CardsScreenState extends State<CardsScreen> {
     }
   }
 
-  void _deleteCard(CardModel card) {
-    _showNotImplemented('Eliminar tarjeta');
-  }
+  Future<void> _deleteCard(CardModel card) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar tarjeta'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta tarjeta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
 
-  void _showNotImplemented(String action) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$action: API no disponible aún')),
-      );
+    if (confirmed != true) return;
+
+    final apiService = ApiService();
+    final token = await _authService.getToken();
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await apiService.delete('/client/cards/${card.id}', headers: headers);
+      // Reload cards to update the list
+      await _loadCards();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['msg'] ?? 'Tarjeta eliminada')),
+        );
+      }
+    } catch (e) {
+      String errorMsg = 'Error al eliminar tarjeta';
+      final errorStr = e.toString();
+      if (errorStr.contains('Error HTTP')) {
+        try {
+          final startIndex = errorStr.indexOf('{');
+          if (startIndex != -1) {
+            final errorBody = errorStr.substring(startIndex);
+            final errorJson = jsonDecode(errorBody);
+            errorMsg = errorJson['msg'] ?? errorMsg;
+          }
+        } catch (_) {}
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
     }
   }
+
 
   void _addCard() {
     Navigator.pushNamed(context, AddCardScreen.routeName);
@@ -231,7 +275,7 @@ class _CardsScreenState extends State<CardsScreen> {
                                               ),
                                               IconButton(
                                                 icon: const Icon(Icons.delete, color: Colors.red),
-                                                onPressed: () => _deleteCard(card),
+                                                onPressed: () async => await _deleteCard(card),
                                                 tooltip: 'Eliminar tarjeta',
                                               ),
                                             ],

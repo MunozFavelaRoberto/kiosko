@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dataProvider = Provider.of<DataProvider>(context, listen: false);
       dataProvider.fetchUser();
+      dataProvider.fetchOutstandingPayments();
       dataProvider.fetchCategories();
       dataProvider.fetchServices();
       dataProvider.fetchPayments();
@@ -36,9 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: Consumer<DataProvider>(
             builder: (context, provider, child) {
-              if (provider.isLoading || provider.user == null) return const Center(child: CircularProgressIndicator());
-              final user = provider.user!;
-              final status = user.balance == 0 ? 'Pagado' : 'Pendiente';
+              if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+              if (provider.user == null) return const Center(child: Text('Error al cargar usuario'));
+              final amount = provider.outstandingAmount;
+              final status = amount <= 0 ? 'Pagado' : 'Pendiente';
               final statusColor = status == 'Pagado' ? Colors.green : Colors.yellow.shade800;
               return Center(
                 child: Padding(
@@ -56,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      Text('\$${user.balance}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+                      Text('\$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 32),
                       ElevatedButton(
                         onPressed: status == 'Pendiente' ? () {

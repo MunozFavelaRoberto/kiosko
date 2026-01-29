@@ -9,13 +9,13 @@ class ClientNumberHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<DataProvider>(
       builder: (context, provider, child) {
-        if (provider.user == null) return const SizedBox.shrink();
+        final clientNumber = provider.user?.clientNumber ?? 'Cargando...';
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
           child: Text(
-            'No. Cliente: ${provider.user!.clientNumber}',
+            'No. Cliente: $clientNumber',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
