@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class AddCardScreen extends StatefulWidget {
   static const routeName = '/add-card';
@@ -18,9 +22,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   String? _selectedMonth;
   String? _selectedYear;
+  bool _isFavorite = false;
+  bool _isLoading = false;
+  bool _isCvvVisible = false;
 
   final List<String> _months = List.generate(12, (index) => (index + 1).toString().padLeft(2, '0'));
-  final List<String> _years = List.generate(10, (index) => (DateTime.now().year + index).toString());
+  final List<String> _years = List.generate(11, (index) => (DateTime.now().year + index).toString());
 
   @override
   void dispose() {
@@ -72,13 +79,59 @@ class _AddCardScreenState extends State<AddCardScreen> {
     return null;
   }
 
-  void _saveCard() {
+  Future<void> _saveCard() async {
     if (_formKey.currentState!.validate()) {
-      // Aquí iría la lógica para guardar la tarjeta
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tarjeta agregada exitosamente')),
-      );
-      Navigator.pop(context);
+      setState(() {
+        _isLoading = true;
+      });
+
+      final authService = context.read<AuthService>();
+      final apiService = ApiService();
+      final token = await authService.getToken();
+      final headers = {'Authorization': 'Bearer $token'};
+
+      final body = {
+        'holder_name': _holderNameController.text.trim(),
+        'card_number': _cardNumberController.text.replaceAll(' ', ''),
+        'cvv2': _cvvController.text,
+        'expiration_month': _selectedMonth!,
+        'expiration_year': _selectedYear!.substring(2),
+        'is_favorite': _isFavorite ? 1 : 0,
+      };
+
+      try {
+        await apiService.post('/client/cards', headers: headers, body: body);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tarjeta agregada exitosamente')),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        String errorMsg = 'Error al agregar tarjeta';
+        final errorStr = e.toString();
+        if (errorStr.contains('Error HTTP')) {
+          try {
+            final startIndex = errorStr.indexOf('{');
+            if (startIndex != -1) {
+              final errorBody = errorStr.substring(startIndex);
+              final errorJson = jsonDecode(errorBody);
+              errorMsg = errorJson['msg'] ?? errorMsg;
+            }
+          } catch (_) {}
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg)),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -219,7 +272,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       items: _years.map((year) {
                         return DropdownMenuItem(
                           value: year,
-                          child: Text(year),
+                          child: Text(year.substring(2)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -239,21 +292,30 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   labelText: 'CVV',
                   hintText: '123',
                   prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.help_outline),
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('CVV'),
-                        content: const Text('Los 3 dígitos de seguridad ubicados en la parte trasera de tu tarjeta.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Entendido'),
-                          ),
-                        ],
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(_isCvvVisible ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _isCvvVisible = !_isCvvVisible),
                       ),
-                    ),
+                      IconButton(
+                        icon: const Icon(Icons.help_outline),
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('CVV'),
+                            content: const Text('Los 3 dígitos de seguridad ubicados en la parte trasera de tu tarjeta.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Entendido'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -266,21 +328,63 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
-                obscureText: true,
+                obscureText: !_isCvvVisible,
                 validator: _validateCvv,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Switch(
+                    value: _isFavorite,
+                    onChanged: (value) {
+                      setState(() {
+                        _isFavorite = value;
+                      });
+                    },
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Establecer como tarjeta principal'),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Esta tarjeta se usará por defecto en tus pagos',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: FilledButton(
-                  onPressed: _saveCard,
+                  onPressed: _isLoading ? null : _saveCard,
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
