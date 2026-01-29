@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/screens/add_card_screen.dart';
+import 'package:kiosko/models/card.dart';
+import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class CardsScreen extends StatefulWidget {
   static const routeName = '/cards';
@@ -12,145 +17,57 @@ class CardsScreen extends StatefulWidget {
 }
 
 class _CardsScreenState extends State<CardsScreen> {
-  // Datos hardcodeados de las tarjetas
-  final List<Map<String, dynamic>> _cards = [
-    {
-      'bank': 'Banco Nacional',
-      'number': '**** **** **** 1234',
-      'holder': 'Juan Pérez García',
-      'expiry': '12/25',
-      'isPreferred': true,
-    },
-    {
-      'bank': 'Banco Internacional',
-      'number': '**** **** **** 5678',
-      'holder': 'Juan Pérez García',
-      'expiry': '06/24',
-      'isPreferred': false,
-    },
-    {
-      'bank': 'Banco 2',
-      'number': '**** **** **** 8931',
-      'holder': 'Yolanda Martínez López',
-      'expiry': '02/26',
-      'isPreferred': false,
-    },
-  ];
+  late List<CardModel> _cards;
+  bool _isLoading = true;
 
-  void _togglePreferred(int index) async {
-    final card = _cards[index];
-    final isCurrentlyPreferred = card['isPreferred'];
-    final hasOtherPreferred = _cards.any((c) => c['isPreferred'] && c != card);
+  static const Map<String, String> brandLogos = {
+    'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
+    'mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
+    'amex': 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
+    'discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg',
+  };
 
-    if (!isCurrentlyPreferred && hasOtherPreferred) {
-      // Si hay otra favorita y quiere marcar esta, confirmar cambio
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Cambiar tarjeta favorita'),
-          content: const Text('¿Quieres marcar esta tarjeta como favorita? La tarjeta actualmente favorita será desmarcada.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    } else if (!isCurrentlyPreferred) {
-      // Marcar como favorita sin otras
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Marcar como favorita'),
-          content: const Text('¿Quieres marcar esta tarjeta como favorita?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    } else {
-      // Desmarcar
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Desmarcar favorita'),
-          content: const Text('¿Quieres desmarcar esta tarjeta como favorita?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadCards();
+  }
 
-    setState(() {
-      if (!isCurrentlyPreferred) {
-        // Marcar esta como favorita, desmarcar otras
-        for (int i = 0; i < _cards.length; i++) {
-          _cards[i]['isPreferred'] = false;
-        }
+  Future<void> _loadCards() async {
+    final authService = context.read<AuthService>();
+    final apiService = ApiService();
+    final token = await authService.getToken();
+    final headers = {'Authorization': 'Bearer $token'};
+    try {
+      _cards = await apiService.getCards(headers: headers);
+    } catch (e) {
+      _cards = [];
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar tarjetas: $e')),
+        );
       }
-      _cards[index]['isPreferred'] = !isCurrentlyPreferred;
-    });
-
+    }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isCurrentlyPreferred ? 'Tarjeta desmarcada como favorita' : 'Tarjeta marcada como favorita'),
-        ),
-      );
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _deleteCard(int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar tarjeta'),
-        content: const Text('¿Estás seguro de que quieres eliminar esta tarjeta?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
+  void _togglePreferred(CardModel card) {
+    _showNotImplemented('Marcar como favorita');
+  }
 
-    if (confirmed == true) {
-      setState(() {
-        _cards.removeAt(index);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tarjeta eliminada')),
-        );
-      }
+  void _deleteCard(CardModel card) {
+    _showNotImplemented('Eliminar tarjeta');
+  }
+
+  void _showNotImplemented(String action) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$action: API no disponible aún')),
+      );
     }
   }
 
@@ -168,65 +85,133 @@ class _CardsScreenState extends State<CardsScreen> {
         children: [
           const ClientNumberHeader(),
           Expanded(
-            child: _cards.isEmpty
-                ? const Center(child: Text('No hay tarjetas registradas'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _cards.length,
-                    itemBuilder: (context, index) {
-                      final card = _cards[index];
-                      return Card(
-                        elevation: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _cards.isEmpty
+                    ? const Center(child: Text('No hay tarjetas registradas'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _cards.length,
+                        itemBuilder: (context, index) {
+                          final card = _cards[index];
+                          final String brand = card.brand.toLowerCase();
+                          final bool isVisa = brand == 'visa';
+                          final bool isMastercard = brand == 'mastercard';
+                          final bool hasSpecialColor = isVisa || isMastercard;
+                          final Color textColor = hasSpecialColor ? Colors.white : Colors.black;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: hasSpecialColor ? null : Colors.white,
+                              gradient: isVisa
+                                  ? const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Color(0xFF3343a4), Color(0xFF5B6BC0)], // Azul base a azul más claro
+                                      stops: [0.2, 1.0], // Extender colores fuertes
+                                    )
+                                  : isMastercard
+                                      ? const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [Color(0xFFec7711), Color(0xFF5B6BC0)], // Naranja base a azul claro
+                                          stops: [0.2, 1.0], // Extender colores fuertes
+                                        )
+                                      : null,
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    card['bank'],
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          card.cardNumber,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontFamily: 'monospace',
+                                            color: textColor,
+                                          ),
+                                        ),
+                                      ),
+                                      brandLogos.containsKey(card.brand.toLowerCase())
+                                          ? SvgPicture.network(
+                                              brandLogos[card.brand.toLowerCase()]!,
+                                              height: 24,
+                                              width: 48,
+                                              fit: BoxFit.contain,
+                                            )
+                                          : Text(
+                                              card.brand.toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor,
+                                              ),
+                                            ),
+                                    ],
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => _deleteCard(index),
-                                    tooltip: 'Eliminar tarjeta',
+                                  const SizedBox(height: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Titular:', style: TextStyle(color: textColor)),
+                                      Text(card.holderName, style: TextStyle(color: textColor)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Válida hasta:', style: TextStyle(color: textColor)),
+                                            Text('${card.expirationMonth}/${card.expirationYear}', style: TextStyle(color: textColor)),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        children: [
+                                          const SizedBox(height: 24), // Ajuste para bajar los iconos
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  card.isFavorite == 1 ? Icons.star : Icons.star_border,
+                                                  color: card.isFavorite == 1 ? Colors.amber : Colors.grey,
+                                                ),
+                                                onPressed: () => _togglePreferred(card),
+                                                tooltip: 'Marcar como preferida',
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                onPressed: () => _deleteCard(card),
+                                                tooltip: 'Eliminar tarjeta',
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                card['number'],
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text('${card['holder']}'),
-                              const SizedBox(height: 8),
-                              Text('${card['expiry']}'),
-                              const SizedBox(height: 12),
-                              IconButton(
-                                icon: Icon(
-                                  card['isPreferred'] ? Icons.star : Icons.star_border,
-                                  color: card['isPreferred'] ? Colors.amber : Colors.grey,
-                                ),
-                                onPressed: () => _togglePreferred(index),
-                                tooltip: 'Marcar como preferida',
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          );
+                        },
+                      ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),

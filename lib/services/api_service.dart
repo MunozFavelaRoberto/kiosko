@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:kiosko/models/card.dart';
 
 class ApiService {
   final String baseUrl;
@@ -119,6 +120,14 @@ class ApiService {
     } else {
       throw Exception('Error HTTP $statusCode: $body');
     }
+  }
+
+  // Obtener tarjetas del cliente
+  Future<List<CardModel>> getCards({Map<String, String>? headers}) async {
+    final response = await get('/client/cards', headers: headers);
+    final data = response['data'];
+    final items = data['items'] as List;
+    return items.map((item) => CardModel.fromJson(item)).toList();
   }
 
   // Cerrar cliente
