@@ -239,7 +239,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Editar Datos Fiscales'),
+        title: const Text('Editar datos fiscales'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -251,7 +251,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Información Fiscal',
+                'Información fiscal',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,

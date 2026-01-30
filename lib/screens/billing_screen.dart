@@ -77,7 +77,7 @@ class _BillingScreenState extends State<BillingScreen> {
                               children: [
                                 ListTile(
                                   title: const Text('Datos fiscales'),
-                                  trailing: IconButton(
+                                  trailing: IconButton.outlined(
                                     icon: const Icon(Icons.edit, color: Colors.orange),
                                     onPressed: () => Navigator.pushNamed(context, EditBillingScreen.routeName),
                                     tooltip: 'Editar datos fiscales',

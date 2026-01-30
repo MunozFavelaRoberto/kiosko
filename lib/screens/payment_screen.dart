@@ -1,0 +1,368 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:kiosko/widgets/client_number_header.dart';
+import 'package:kiosko/models/card.dart';
+import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/services/data_provider.dart';
+import 'package:kiosko/screens/cards_screen.dart';
+import 'package:kiosko/screens/edit_billing_screen.dart';
+import 'package:provider/provider.dart';
+
+class PaymentScreen extends StatefulWidget {
+  static const routeName = '/payment';
+
+  const PaymentScreen({super.key});
+
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  late List<CardModel> _cards;
+  Map<String, dynamic>? _fiscalData;
+  bool _isLoading = true;
+  bool _requiresInvoice = false;
+
+  static const Map<String, String> brandLogos = {
+    'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
+    'mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
+    'amex': 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
+    'discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg',
+  };
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dataProvider = Provider.of<DataProvider>(context, listen: false);
+      if (dataProvider.user == null) {
+        dataProvider.fetchUser();
+      }
+    });
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final authService = context.read<AuthService>();
+    final apiService = ApiService();
+    final token = await authService.getToken();
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      // Load cards
+      final cardsResponse = await apiService.getCards(headers: headers);
+      _cards = cardsResponse;
+
+      // Load fiscal data
+      final fiscalResponse = await apiService.get('/client/fiscal_data', headers: headers);
+      if (fiscalResponse != null && fiscalResponse['data'] != null) {
+        _fiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
+      }
+    } catch (e) {
+      _cards = [];
+      debugPrint('Error loading payment data: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  CardModel? get _favoriteCard {
+    try {
+      return _cards.firstWhere((card) => card.isFavorite == 1);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void _changeCard() {
+    Navigator.pushNamed(context, CardsScreen.routeName);
+  }
+
+  void _changeFiscalData() {
+    Navigator.pushNamed(context, EditBillingScreen.routeName);
+  }
+
+  void _pay() {
+    // No functionality yet
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pago no implementado aún')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final dataProvider = context.watch<DataProvider>();
+    final amount = dataProvider.outstandingAmount;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pago'),
+      ),
+      body: Column(
+        children: [
+          const ClientNumberHeader(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                  // Monto
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Total',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '\$${amount.toStringAsFixed(2)}',
+                          style: theme.textTheme.displayMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            // No functionality
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Detalle no implementado aún')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.lightBlue,
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          ),
+                          child: const Text('Detalle'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Tarjeta favorita
+                  Text(
+                    'Tarjeta de Pago',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_favoriteCard != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: _favoriteCard!.brand.toLowerCase() == 'visa' ? const Color(0xFF3343a4) : null,
+                        gradient: _favoriteCard!.brand.toLowerCase() == 'visa'
+                            ? const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF3343a4), Color(0xFF5B6BC0)],
+                                stops: [0.2, 1.0],
+                              )
+                            : _favoriteCard!.brand.toLowerCase() == 'mastercard'
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFFec7711), Color(0xFF5B6BC0)],
+                                    stops: [0.2, 1.0],
+                                  )
+                                : null,
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _favoriteCard!.cardNumber,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: 'monospace',
+                                      color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                brandLogos.containsKey(_favoriteCard!.brand.toLowerCase())
+                                    ? SvgPicture.network(
+                                        brandLogos[_favoriteCard!.brand.toLowerCase()]!,
+                                        height: 24,
+                                        width: 48,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : Text(
+                                        _favoriteCard!.brand.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Titular:', style: TextStyle(color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
+                                Text(_favoriteCard!.holderName, style: TextStyle(color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Válida hasta:', style: TextStyle(color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
+                                Text('${_favoriteCard!.expirationMonth}/${_favoriteCard!.expirationYear}', style: TextStyle(color: _favoriteCard!.brand.toLowerCase() == 'visa' || _favoriteCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: _changeCard,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Cambiar Tarjeta'),
+                      ),
+                    ),
+                  ] else ...[
+                    const Center(child: Text('No hay tarjeta favorita seleccionada')),
+                  ],
+                  const SizedBox(height: 32),
+                  // Switch para factura
+                  Row(
+                    children: [
+                      Switch(
+                        value: _requiresInvoice,
+                        onChanged: (value) {
+                          setState(() {
+                            _requiresInvoice = value;
+                          });
+                        },
+                        activeThumbColor: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 16),
+                      const Text('Necesito factura'),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  if (_requiresInvoice) ...[
+                    // Datos fiscales
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Información fiscal',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _changeFiscalData,
+                          child: const Text('Cambiar'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_fiscalData != null)
+                      Card(
+                        elevation: 0,
+                        color: theme.colorScheme.surface.withAlpha(230),
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: const Text('RFC'),
+                              subtitle: Text(_fiscalData!['code'] ?? 'N/A'),
+                            ),
+                            const Divider(),
+                            ListTile(
+                              title: const Text('Razón Social'),
+                              subtitle: Text(_fiscalData!['name'] ?? 'N/A'),
+                            ),
+                            const Divider(),
+                            ListTile(
+                              title: const Text('Código Postal'),
+                              subtitle: Text(_fiscalData!['zip'] ?? 'N/A'),
+                            ),
+                            const Divider(),
+                            ListTile(
+                              title: const Text('Régimen Fiscal'),
+                              subtitle: Text(_fiscalData!['fiscal_regime'] != null
+                                  ? '${_fiscalData!['fiscal_regime']['code']} - ${_fiscalData!['fiscal_regime']['name']}'
+                                  : 'N/A'),
+                            ),
+                            const Divider(),
+                            ListTile(
+                              title: const Text('Uso de CFDI'),
+                              subtitle: Text(_fiscalData!['cfdi_usage'] != null
+                                  ? '${_fiscalData!['cfdi_usage']['code']} - ${_fiscalData!['cfdi_usage']['name']}'
+                                  : 'N/A'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      const Center(child: Text('No hay datos fiscales disponibles')),
+                    const SizedBox(height: 32),
+                  ],
+                        const SizedBox(height: 32),
+                        // Botón de pagar
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton(
+                            onPressed: _pay,
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Pagar', style: TextStyle(fontSize: 18)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -29,6 +29,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _authService = Provider.of<AuthService>(context, listen: false);
     _apiService = ApiService();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dataProvider = Provider.of<DataProvider>(context, listen: false);
+      if (dataProvider.user == null) {
+        dataProvider.fetchUser();
+      }
+    });
     _loadBiometrics();
   }
 
@@ -303,7 +309,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ListTile(
                             title: const Text('Correo electrónico'),
                             subtitle: Text(user.email),
-                            trailing: IconButton(
+                            trailing: IconButton.outlined(
                               icon: const Icon(Icons.edit, color: Colors.orange),
                               onPressed: _editEmail,
                             ),

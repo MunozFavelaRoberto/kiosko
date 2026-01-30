@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
+import 'package:kiosko/screens/payment_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,10 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 32),
                       ElevatedButton(
                         onPressed: status == 'Pendiente' ? () {
-                          // Lógica para pagar
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Pago procesado')),
-                          );
+                          Navigator.pushNamed(context, PaymentScreen.routeName);
                         } : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,

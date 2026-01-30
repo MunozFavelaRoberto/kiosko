@@ -11,6 +11,7 @@ import 'package:kiosko/screens/add_card_screen.dart';
 import 'package:kiosko/screens/home_screen.dart';
 import 'package:kiosko/screens/profile_screen.dart';
 import 'package:kiosko/screens/biometric_lock_screen.dart';
+import 'package:kiosko/screens/payment_screen.dart';
 import 'package:kiosko/services/auth_service.dart';
 
 Future<void> main() async {
@@ -68,6 +69,7 @@ class KioskoApp extends StatelessWidget {
         AddCardScreen.routeName: (context) => const AddCardScreen(),
         BillingScreen.routeName: (context) => const BillingScreen(),
         EditBillingScreen.routeName: (context) => const EditBillingScreen(),
+        PaymentScreen.routeName: (context) => const PaymentScreen(),
       },
     );
   }
