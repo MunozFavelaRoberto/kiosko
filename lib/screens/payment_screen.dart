@@ -341,9 +341,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   color: colorScheme.onSurface,
                                 ),
                               ),
-                              TextButton(
+                              OutlinedButton.icon(
                                 onPressed: _changeFiscalData,
-                                child: const Text('Cambiar'),
+                                icon: const Icon(Icons.edit, color: Colors.orange),
+                                label: const Text('Cambiar'),
                               ),
                             ],
                           ),
