@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:kiosko/models/card.dart';
+import 'package:kiosko/models/payment_detail.dart';
 
 class ApiService {
   // Singleton pattern
@@ -131,6 +132,14 @@ class ApiService {
     final data = response['data'];
     final items = data['items'] as List;
     return items.map((item) => CardModel.fromJson(item)).toList();
+  }
+
+  // Obtener detalles de pagos pendientes
+  Future<List<PaymentDetail>> getOutstandingPayments({Map<String, String>? headers}) async {
+    final response = await get('/client/payments/outstanding', headers: headers);
+    final data = response['data'];
+    final payments = data['payments'] as List;
+    return payments.map((item) => PaymentDetail.fromJson(item)).toList();
   }
 
   // Cerrar cliente (llamar al salir de la app)

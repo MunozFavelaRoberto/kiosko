@@ -151,7 +151,13 @@ class _CardsScreenState extends State<CardsScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _cards.isEmpty
-                    ? const Center(child: Text('No hay tarjetas registradas'))
+                    ? const Center(
+                        child: Text(
+                          'No tienes tarjetas registradas.\n'
+                          'Por favor, agrega una tarjeta para continuar.',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: _cards.length,

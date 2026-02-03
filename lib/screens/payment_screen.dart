@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/models/card.dart';
+import 'package:kiosko/models/payment_detail.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/screens/cards_screen.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
+import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -140,6 +142,151 @@ class _PaymentScreenState extends State<PaymentScreen> {
     Navigator.pushNamed(context, EditBillingScreen.routeName);
   }
 
+  Future<void> _showPaymentDetails() async {
+    final authService = context.read<AuthService>();
+    final token = await authService.getToken();
+    
+    if (!mounted) return;
+    
+    final headers = {'Authorization': 'Bearer $token'};
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Detalle de pagos'),
+        content: FutureBuilder<List<PaymentDetail>>(
+          future: _apiService.getOutstandingPayments(headers: headers),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                heightFactor: 1.0,
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                heightFactor: 1.0,
+                child: Text(
+                  ErrorHelper.parseError(snapshot.error.toString(), 
+                    defaultMsg: 'Error al cargar detalles'),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            final payments = snapshot.data ?? [];
+
+            if (payments.isEmpty) {
+              return const Center(
+                heightFactor: 1.0,
+                child: Text('No hay pagos pendientes'),
+              );
+            }
+
+            return SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: payments.length,
+                itemBuilder: (context, index) {
+                  final payment = payments[index];
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Folio:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Text(
+                                      payment.uiid,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'Monto:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${payment.amount}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Descripción:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            payment.description,
+                            style: const TextStyle(fontSize: 14),
+                            softWrap: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _pay() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Pago no implementado aún')),
@@ -190,11 +337,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ),
                               const SizedBox(height: 16),
                               ElevatedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Detalle no implementado aún')),
-                                  );
-                                },
+                                onPressed: _showPaymentDetails,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.lightBlue,
                                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
