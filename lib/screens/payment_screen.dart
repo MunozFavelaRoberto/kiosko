@@ -24,6 +24,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Map<String, dynamic>? _fiscalData;
   bool _isLoading = true;
   bool _requiresInvoice = false;
+  // ValueNotifier para compartir el estado de tarjeta seleccionada con CardsScreen
+  final ValueNotifier<CardModel?> _selectedCardNotifier = ValueNotifier<CardModel?>(null);
 
   final ApiService _apiService = ApiService();
 
@@ -57,13 +59,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (fiscalResponse != null && fiscalResponse['data'] != null) {
         _fiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
       }
-      if (_selectedCard != null) {
+      // Si ya tenemos una tarjeta seleccionada por el usuario, mantenerla
+      if (_selectedCard == null) {
+        // Primera vez: seleccionar la favorita o la primera tarjeta
+        try {
+          _selectedCard = _cards.firstWhere((card) => card.isFavorite == 1);
+        } catch (_) {
+          _selectedCard = _cards.isNotEmpty ? _cards.first : null;
+        }
+        // Actualizar el notifier
+        _selectedCardNotifier.value = _selectedCard;
+      } else {
+        // Verificar que la tarjeta seleccionada aún existe en la lista
         _selectedCard = _cards.firstWhere(
           (card) => card.id == _selectedCard!.id,
-          orElse: () => _cards.firstWhere(
-            (card) => card.isFavorite == 1,
-            orElse: () => _cards.isNotEmpty ? _cards.first : _selectedCard!,
-          ),
+          orElse: () {
+            // Si la tarjeta ya no existe, seleccionar la favorita o la primera
+            try {
+              return _cards.firstWhere((card) => card.isFavorite == 1);
+            } catch (_) {
+              return _cards.isNotEmpty ? _cards.first : _selectedCard!;
+            }
+          },
         );
       }
     } catch (e) {
@@ -76,6 +93,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _selectedCardNotifier.dispose();
+    super.dispose();
   }
 
   CardModel? get _displayCard {
@@ -92,12 +115,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final selectedCard = await Navigator.push<CardModel>(
       context,
       MaterialPageRoute(
-        builder: (context) => CardsScreen(
-          selectionMode: CardsSelectionMode.select,
-          selectedCard: _selectedCard,
-          onSelect: (card) {
-            Navigator.pop(context, card);
-          },
+        builder: (context) => ValueListenableBuilder<CardModel?>(
+          valueListenable: _selectedCardNotifier,
+          builder: (context, currentCard, child) => CardsScreen(
+            selectionMode: CardsSelectionMode.select,
+            selectedCard: currentCard,
+            onSelect: (card) {
+              _selectedCard = card;
+              _selectedCardNotifier.value = card;
+              Navigator.pop(context, card);
+            },
+          ),
         ),
       ),
     );
