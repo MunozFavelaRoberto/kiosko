@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:kiosko/models/card.dart';
-import 'package:kiosko/models/payment_detail.dart';
+import 'package:kiosko/models/payment_detail.dart' as payment_detail;
+import 'package:kiosko/models/payment_history.dart' as payment_history;
 
 class ApiService {
   // Singleton pattern
@@ -135,11 +136,54 @@ class ApiService {
   }
 
   // Obtener detalles de pagos pendientes
-  Future<List<PaymentDetail>> getOutstandingPayments({Map<String, String>? headers}) async {
+  Future<List<payment_detail.PaymentDetail>> getOutstandingPayments({Map<String, String>? headers}) async {
     final response = await get('/client/payments/outstanding', headers: headers);
     final data = response['data'];
     final payments = data['payments'] as List;
-    return payments.map((item) => PaymentDetail.fromJson(item)).toList();
+    return payments.map((item) => payment_detail.PaymentDetail.fromJson(item)).toList();
+  }
+
+  // Obtener historial de pagos
+  Future<List<payment_history.PaymentHistory>> getPaymentHistory({Map<String, String>? headers}) async {
+    final response = await get('/client/payments/history', headers: headers);
+    final data = response['data'];
+    final items = data['items'] as List;
+    return items.map((item) => payment_history.PaymentHistory.fromJson(item)).toList();
+  }
+
+  // Descargar factura en PDF o XML
+  Future<String> downloadInvoice({required String headers, required int paymentId, required String fileExtension}) async {
+    print('ApiService.downloadInvoice: paymentId=$paymentId, fileExtension=$fileExtension');
+    final response = await post(
+      '/client/payments/invoice/file',
+      headers: {'Authorization': headers},
+      body: {
+        'id': paymentId,
+        'file_extention': fileExtension,
+      },
+    );
+    print('ApiService.downloadInvoice response: $response');
+    final data = response['data'];
+    final file = data['file'] as String;
+    print('ApiService.downloadInvoice file length: ${file.length}');
+    return file;
+  }
+
+  // Descargar ticket de pago
+  Future<String> downloadTicket({required String headers, required int paymentId}) async {
+    print('ApiService.downloadTicket: paymentId=$paymentId');
+    final response = await post(
+      '/client/payments/ticket',
+      headers: {'Authorization': headers},
+      body: {
+        'id': paymentId,
+      },
+    );
+    print('ApiService.downloadTicket response: $response');
+    final data = response['data'];
+    final file = data['file'] as String;
+    print('ApiService.downloadTicket file length: ${file.length}');
+    return file;
   }
 
   // Cerrar cliente (llamar al salir de la app)

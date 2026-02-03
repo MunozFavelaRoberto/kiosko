@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kiosko/models/category.dart';
 import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
+import 'package:kiosko/models/payment_history.dart';
 import 'package:kiosko/models/user.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
@@ -17,6 +18,7 @@ class DataProvider extends ChangeNotifier {
   List<Category> _categories = [];
   List<Service> _services = [];
   List<Payment> _payments = [];
+  List<PaymentHistory> _paymentHistory = [];
   User? _user;
   double _outstandingAmount = 0.0;
   bool _isLoading = false;
@@ -25,6 +27,7 @@ class DataProvider extends ChangeNotifier {
   List<Category> get categories => _categories;
   List<Service> get services => _services;
   List<Payment> get payments => _payments;
+  List<PaymentHistory> get paymentHistory => _paymentHistory;
   User? get user => _user;
   double get outstandingAmount => _outstandingAmount;
   bool get isLoading => _isLoading;
@@ -94,6 +97,28 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error fetching outstanding payments: $e');
       _outstandingAmount = 0.0;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchPaymentHistory() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await _authService?.getToken();
+      if (token != null) {
+        _paymentHistory = await _apiService.getPaymentHistory(headers: {
+          'Authorization': 'Bearer $token',
+        });
+      } else {
+        throw Exception('No hay token disponible');
+      }
+    } catch (e) {
+      debugPrint('Error fetching payment history: $e');
+      _paymentHistory = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -175,5 +200,30 @@ class DataProvider extends ChangeNotifier {
   void updateUser(User newUser) {
     _user = newUser;
     notifyListeners();
+  }
+
+  // Descargar factura (PDF o XML)
+  Future<String> downloadInvoice(int paymentId, String fileExtension) async {
+    print('DataProvider.downloadInvoice: paymentId=$paymentId, fileExtension=$fileExtension');
+    final token = await _authService?.getToken();
+    if (token == null) throw Exception('No hay token disponible');
+    
+    return await _apiService.downloadInvoice(
+      headers: 'Bearer $token',
+      paymentId: paymentId,
+      fileExtension: fileExtension,
+    );
+  }
+
+  // Descargar ticket
+  Future<String> downloadTicket(int paymentId) async {
+    print('DataProvider.downloadTicket: paymentId=$paymentId');
+    final token = await _authService?.getToken();
+    if (token == null) throw Exception('No hay token disponible');
+    
+    return await _apiService.downloadTicket(
+      headers: 'Bearer $token',
+      paymentId: paymentId,
+    );
   }
 }

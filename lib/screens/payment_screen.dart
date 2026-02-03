@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/models/card.dart';
-import 'package:kiosko/models/payment_detail.dart';
+import 'package:kiosko/models/payment_detail.dart' as payment_detail;
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/data_provider.dart';
@@ -155,7 +155,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Detalle de pagos'),
-        content: FutureBuilder<List<PaymentDetail>>(
+        content: FutureBuilder<List<payment_detail.PaymentDetail>>(
           future: _apiService.getOutstandingPayments(headers: headers),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -472,6 +472,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ],
                         ),
                         const SizedBox(height: 32),
+                        // Datos fiscales (solo si necesita factura)
                         if (_requiresInvoice) ...[
                           // Datos fiscales
                           Row(
@@ -536,21 +537,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           else
                             const Center(child: Text('No hay datos fiscales disponibles')),
                           const SizedBox(height: 32),
-                          // Botón de pagar
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: FilledButton(
-                              onPressed: _pay,
-                              style: FilledButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('Pagar', style: TextStyle(fontSize: 18)),
-                            ),
-                          ),
                         ],
+                        // Botón de pagar (siempre visible)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton(
+                            onPressed: _pay,
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Pagar', style: TextStyle(fontSize: 18)),
+                          ),
+                        ),
                       ],
                     ),
                   ),
