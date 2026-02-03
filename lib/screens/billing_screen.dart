@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
 import 'package:kiosko/services/auth_service.dart';
@@ -14,16 +15,22 @@ class BillingScreen extends StatefulWidget {
 }
 
 class _BillingScreenState extends State<BillingScreen> {
-  late final AuthService _authService;
   late final ApiService _apiService;
+  late final AuthService _authService;
   Map<String, dynamic>? _fiscalData;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _authService = AuthService();
-    _apiService = ApiService();
+    // Los servicios se obtienen en didChangeDependencies para asegurar que están disponibles
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _apiService = context.read<ApiService>();
+    _authService = context.read<AuthService>();
     _loadFiscalData();
   }
 

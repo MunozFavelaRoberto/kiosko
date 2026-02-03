@@ -5,25 +5,26 @@ import 'package:http/io_client.dart';
 import 'package:kiosko/models/card.dart';
 
 class ApiService {
-  final String baseUrl;
-  final http.Client _client;
+  // Singleton pattern
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() => _instance;
+  ApiService._internal();
+
+  final http.Client _client = _createHttpClient();
 
   // URL de la API real
   static const String baseUrlApi = 'https://apipagoselectronicos.svr.com.mx/api';
-
-  ApiService({this.baseUrl = baseUrlApi, http.Client? client})
-      : _client = client ?? _createHttpClient();
+  String get baseUrl => baseUrlApi;
 
   static http.Client _createHttpClient() {
     // Ignorar errores de certificado SSL
     // Esto permite probar con certificados autofirmados o inválidos:
-
     // ❌ para DESARROLLO:
     final ioClient = HttpClient();
     ioClient.badCertificateCallback = (cert, host, port) => true;
     return IOClient(ioClient);
 
-    // ✅  Para PRODUCCION: descomentar esta línea y eliminar el código de arriba
+    // ✅ Para PRODUCCION: descomentar esta línea y eliminar el código de arriba
     // return http.Client();
   }
 
@@ -130,7 +131,7 @@ class ApiService {
     return items.map((item) => CardModel.fromJson(item)).toList();
   }
 
-  // Cerrar cliente
+  // Cerrar cliente (llamar al salir de la app)
   void dispose() {
     _client.close();
   }

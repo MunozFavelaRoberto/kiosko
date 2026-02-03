@@ -1,7 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/utils/error_helper.dart';
 
 class EditBillingScreen extends StatefulWidget {
   static const routeName = '/edit-billing';
@@ -20,8 +21,8 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
   String? _selectedRegimen;
   String? _selectedUsoCFDI;
 
+  final ApiService _apiService = ApiService(); // Singleton
   late final AuthService _authService;
-  late final ApiService _apiService;
   List<Map<String, dynamic>> _regimenes = [];
   List<Map<String, dynamic>> _usosCFDI = [];
   Map<String, dynamic>? _currentFiscalData;
@@ -30,8 +31,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
   @override
   void initState() {
     super.initState();
-    _authService = AuthService();
-    _apiService = ApiService();
+    _authService = context.read<AuthService>();
     _loadCatalogs();
   }
 
@@ -211,21 +211,9 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
           }
         }
       } catch (e) {
-        String errorMsg = 'Error de conexión';
-        final errorStr = e.toString();
-        if (errorStr.contains('Error HTTP')) {
-          try {
-            final startIndex = errorStr.indexOf('{');
-            if (startIndex != -1) {
-              final errorBody = errorStr.substring(startIndex);
-              final errorJson = jsonDecode(errorBody);
-              errorMsg = errorJson['msg'] ?? errorMsg;
-            }
-          } catch (_) {}
-        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg)),
+            SnackBar(content: Text(ErrorHelper.parseError(e.toString()))),
           );
         }
       }

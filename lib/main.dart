@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/services/data_provider.dart';
+import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/screens/login_screen.dart';
 import 'package:kiosko/screens/billing_screen.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
@@ -24,9 +25,11 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         Provider<AuthService>(create: (_) => AuthService()),
+        Provider<ApiService>(create: (_) => ApiService()),
         ChangeNotifierProvider<DataProvider>(
           create: (context) => DataProvider(
             authService: Provider.of<AuthService>(context, listen: false),
+            apiService: Provider.of<ApiService>(context, listen: false),
           ),
         ),
       ],

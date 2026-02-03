@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
 
 class AddCardScreen extends StatefulWidget {
@@ -28,6 +28,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   final List<String> _months = List.generate(12, (index) => (index + 1).toString().padLeft(2, '0'));
   final List<String> _years = List.generate(11, (index) => (DateTime.now().year + index).toString());
+
+  final ApiService _apiService = ApiService(); // Singleton
 
   @override
   void dispose() {
@@ -86,7 +88,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
       });
 
       final authService = context.read<AuthService>();
-      final apiService = ApiService();
       final token = await authService.getToken();
       final headers = {'Authorization': 'Bearer $token'};
 
@@ -100,7 +101,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       };
 
       try {
-        await apiService.post('/client/cards', headers: headers, body: body);
+        await _apiService.post('/client/cards', headers: headers, body: body);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Tarjeta agregada exitosamente')),
@@ -108,21 +109,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
           Navigator.pop(context);
         }
       } catch (e) {
-        String errorMsg = 'Error al agregar tarjeta';
-        final errorStr = e.toString();
-        if (errorStr.contains('Error HTTP')) {
-          try {
-            final startIndex = errorStr.indexOf('{');
-            if (startIndex != -1) {
-              final errorBody = errorStr.substring(startIndex);
-              final errorJson = jsonDecode(errorBody);
-              errorMsg = errorJson['msg'] ?? errorMsg;
-            }
-          } catch (_) {}
-        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg)),
+            SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al agregar tarjeta'))),
           );
         }
       } finally {

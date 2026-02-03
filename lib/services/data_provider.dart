@@ -7,10 +7,12 @@ import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
 
 class DataProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final ApiService _apiService;
   final AuthService? _authService;
 
-  DataProvider({AuthService? authService}) : _authService = authService;
+  DataProvider({AuthService? authService, ApiService? apiService})
+      : _authService = authService,
+        _apiService = apiService ?? ApiService();
 
   List<Category> _categories = [];
   List<Service> _services = [];

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
@@ -6,12 +5,27 @@ import 'package:kiosko/screens/add_card_screen.dart';
 import 'package:kiosko/models/card.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
+
+enum CardsSelectionMode {
+  view,    // Ver, editar, eliminar, agregar
+  select,  // Seleccionar una tarjeta para pago
+}
 
 class CardsScreen extends StatefulWidget {
   static const routeName = '/cards';
 
-  const CardsScreen({super.key});
+  final CardsSelectionMode selectionMode;
+  final CardModel? selectedCard;
+  final Function(CardModel)? onSelect;
+
+  const CardsScreen({
+    super.key,
+    this.selectionMode = CardsSelectionMode.view,
+    this.selectedCard,
+    this.onSelect,
+  });
 
   @override
   State<CardsScreen> createState() => _CardsScreenState();
@@ -21,6 +35,7 @@ class _CardsScreenState extends State<CardsScreen> {
   late List<CardModel> _cards;
   bool _isLoading = true;
   late AuthService _authService;
+  final ApiService _apiService = ApiService(); // Singleton
 
   static const Map<String, String> brandLogos = {
     'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
@@ -37,16 +52,15 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Future<void> _loadCards() async {
-    final apiService = ApiService();
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
     try {
-      _cards = await apiService.getCards(headers: headers);
+      _cards = await _apiService.getCards(headers: headers);
     } catch (e) {
       _cards = [];
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar tarjetas: $e')),
+          SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al cargar tarjetas'))),
         );
       }
     }
@@ -58,14 +72,12 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Future<void> _togglePreferred(CardModel card) async {
-    final apiService = ApiService();
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
     final body = {'user_card_id': card.id};
 
     try {
-      final response = await apiService.post('/client/cards/favorite', headers: headers, body: body);
-      // Reload cards to update the favorite status
+      final response = await _apiService.post('/client/cards/favorite', headers: headers, body: body);
       await _loadCards();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -73,21 +85,9 @@ class _CardsScreenState extends State<CardsScreen> {
         );
       }
     } catch (e) {
-      String errorMsg = 'Error al actualizar favorita';
-      final errorStr = e.toString();
-      if (errorStr.contains('Error HTTP')) {
-        try {
-          final startIndex = errorStr.indexOf('{');
-          if (startIndex != -1) {
-            final errorBody = errorStr.substring(startIndex);
-            final errorJson = jsonDecode(errorBody);
-            errorMsg = errorJson['msg'] ?? errorMsg;
-          }
-        } catch (_) {}
-      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg)),
+          SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al actualizar favorita'))),
         );
       }
     }
@@ -114,13 +114,11 @@ class _CardsScreenState extends State<CardsScreen> {
 
     if (confirmed != true) return;
 
-    final apiService = ApiService();
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
 
     try {
-      final response = await apiService.delete('/client/cards/${card.id}', headers: headers);
-      // Reload cards to update the list
+      final response = await _apiService.delete('/client/cards/${card.id}', headers: headers);
       await _loadCards();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,26 +126,13 @@ class _CardsScreenState extends State<CardsScreen> {
         );
       }
     } catch (e) {
-      String errorMsg = 'Error al eliminar tarjeta';
-      final errorStr = e.toString();
-      if (errorStr.contains('Error HTTP')) {
-        try {
-          final startIndex = errorStr.indexOf('{');
-          if (startIndex != -1) {
-            final errorBody = errorStr.substring(startIndex);
-            final errorJson = jsonDecode(errorBody);
-            errorMsg = errorJson['msg'] ?? errorMsg;
-          }
-        } catch (_) {}
-      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg)),
+          SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al eliminar tarjeta'))),
         );
       }
     }
   }
-
 
   void _addCard() {
     Navigator.pushNamed(context, AddCardScreen.routeName);
@@ -185,15 +170,15 @@ class _CardsScreenState extends State<CardsScreen> {
                                   ? const LinearGradient(
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
-                                      colors: [Color(0xFF3343a4), Color(0xFF5B6BC0)], // Azul base a azul más claro
-                                      stops: [0.2, 1.0], // Extender colores fuertes
+                                      colors: [Color(0xFF3343a4), Color(0xFF5B6BC0)],
+                                      stops: [0.2, 1.0],
                                     )
                                   : isMastercard
                                       ? const LinearGradient(
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
-                                          colors: [Color(0xFFec7711), Color(0xFF5B6BC0)], // Naranja base a azul claro
-                                          stops: [0.2, 1.0], // Extender colores fuertes
+                                          colors: [Color(0xFFec7711), Color(0xFF5B6BC0)],
+                                          stops: [0.2, 1.0],
                                         )
                                       : null,
                               borderRadius: BorderRadius.circular(4),
@@ -262,24 +247,40 @@ class _CardsScreenState extends State<CardsScreen> {
                                       ),
                                       Column(
                                         children: [
-                                          const SizedBox(height: 24), // Ajuste para bajar los iconos
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  card.isFavorite == 1 ? Icons.star : Icons.star_border,
-                                                  color: card.isFavorite == 1 ? Colors.amber : Colors.grey,
+                                          const SizedBox(height: 24),
+                                          if (widget.selectionMode == CardsSelectionMode.view)
+                                            Row(
+                                              children: [
+                                                IconButton(
+                                                  icon: Icon(
+                                                    card.isFavorite == 1 ? Icons.star : Icons.star_border,
+                                                    color: card.isFavorite == 1 ? Colors.amber : Colors.grey,
+                                                  ),
+                                                  onPressed: () async => await _togglePreferred(card),
+                                                  tooltip: 'Marcar como preferida',
                                                 ),
-                                                onPressed: () async => await _togglePreferred(card),
-                                                tooltip: 'Marcar como preferida',
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                                  onPressed: () async => await _deleteCard(card),
+                                                  tooltip: 'Eliminar tarjeta',
+                                                ),
+                                              ],
+                                            )
+                                          else if (widget.selectionMode == CardsSelectionMode.select)
+                                            IconButton(
+                                              icon: Icon(
+                                                widget.selectedCard?.id == card.id
+                                                    ? Icons.check_circle
+                                                    : Icons.radio_button_unchecked,
+                                                color: widget.selectedCard?.id == card.id
+                                                    ? Colors.green
+                                                    : Colors.grey,
                                               ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.red),
-                                                onPressed: () async => await _deleteCard(card),
-                                                tooltip: 'Eliminar tarjeta',
-                                              ),
-                                            ],
-                                          ),
+                                              onPressed: widget.onSelect != null
+                                                  ? () => widget.onSelect!(card)
+                                                  : null,
+                                              tooltip: 'Seleccionar esta tarjeta',
+                                            ),
                                         ],
                                       ),
                                     ],
@@ -291,17 +292,30 @@ class _CardsScreenState extends State<CardsScreen> {
                         },
                       ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: _addCard,
-              icon: const Icon(Icons.add),
-              label: const Text('Agregar Tarjeta'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
+          if (widget.selectionMode == CardsSelectionMode.view)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton.icon(
+                onPressed: _addCard,
+                icon: const Icon(Icons.add),
+                label: const Text('Agregar Tarjeta'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            )
+          else if (widget.selectionMode == CardsSelectionMode.select)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton.icon(
+                onPressed: _addCard,
+                icon: const Icon(Icons.add),
+                label: const Text('Agregar Nueva Tarjeta'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
