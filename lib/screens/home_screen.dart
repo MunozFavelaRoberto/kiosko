@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Consumer<DataProvider>(
             builder: (context, provider, child) {
               if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+              if (provider.isUnauthorized) return const Center(child: Text('No autorizado', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)));
               if (provider.user == null) return const Center(child: Text('Error al cargar usuario'));
               final amount = provider.outstandingAmount;
               final status = amount <= 0 ? 'Pagado' : 'Pendiente';

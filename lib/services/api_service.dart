@@ -118,6 +118,8 @@ class ApiService {
         }
       }
       return null;
+    } else if (statusCode == 401) {
+      throw Exception('No autorizado');
     } else {
       throw Exception('Error HTTP $statusCode: $body');
     }

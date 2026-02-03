@@ -20,6 +20,7 @@ class DataProvider extends ChangeNotifier {
   User? _user;
   double _outstandingAmount = 0.0;
   bool _isLoading = false;
+  bool _isUnauthorized = false;
 
   List<Category> get categories => _categories;
   List<Service> get services => _services;
@@ -27,6 +28,7 @@ class DataProvider extends ChangeNotifier {
   User? get user => _user;
   double get outstandingAmount => _outstandingAmount;
   bool get isLoading => _isLoading;
+  bool get isUnauthorized => _isUnauthorized;
 
   Future<void> fetchCategories() async {
     _isLoading = true;
@@ -130,6 +132,12 @@ class DataProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
+      // Verificar si es error de autorización (401)
+      if (e.toString().contains('No autorizado')) {
+        _isUnauthorized = true;
+      } else {
+        _isUnauthorized = false;
+      }
       // Sin datos disponibles
       _user = null;
     } finally {
