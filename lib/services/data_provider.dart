@@ -204,7 +204,6 @@ class DataProvider extends ChangeNotifier {
 
   // Descargar factura (PDF o XML)
   Future<String> downloadInvoice(int paymentId, String fileExtension) async {
-    print('DataProvider.downloadInvoice: paymentId=$paymentId, fileExtension=$fileExtension');
     final token = await _authService?.getToken();
     if (token == null) throw Exception('No hay token disponible');
     
@@ -217,7 +216,6 @@ class DataProvider extends ChangeNotifier {
 
   // Descargar ticket
   Future<String> downloadTicket(int paymentId) async {
-    print('DataProvider.downloadTicket: paymentId=$paymentId');
     final token = await _authService?.getToken();
     if (token == null) throw Exception('No hay token disponible');
     

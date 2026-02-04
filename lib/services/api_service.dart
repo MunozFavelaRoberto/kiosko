@@ -153,7 +153,6 @@ class ApiService {
 
   // Descargar factura en PDF o XML
   Future<String> downloadInvoice({required String headers, required int paymentId, required String fileExtension}) async {
-    print('ApiService.downloadInvoice: paymentId=$paymentId, fileExtension=$fileExtension');
     final response = await post(
       '/client/payments/invoice/file',
       headers: {'Authorization': headers},
@@ -162,16 +161,12 @@ class ApiService {
         'file_extention': fileExtension,
       },
     );
-    print('ApiService.downloadInvoice response: $response');
     final data = response['data'];
-    final file = data['file'] as String;
-    print('ApiService.downloadInvoice file length: ${file.length}');
-    return file;
+    return data['file'] as String;
   }
 
   // Descargar ticket de pago
   Future<String> downloadTicket({required String headers, required int paymentId}) async {
-    print('ApiService.downloadTicket: paymentId=$paymentId');
     final response = await post(
       '/client/payments/ticket',
       headers: {'Authorization': headers},
@@ -179,11 +174,8 @@ class ApiService {
         'id': paymentId,
       },
     );
-    print('ApiService.downloadTicket response: $response');
     final data = response['data'];
-    final file = data['file'] as String;
-    print('ApiService.downloadTicket file length: ${file.length}');
-    return file;
+    return data['file'] as String;
   }
 
   // Cerrar cliente (llamar al salir de la app)

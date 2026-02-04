@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
@@ -168,75 +169,91 @@ class _PaymentsTabState extends State<PaymentsTab> {
   Future<void> _downloadFile(String fileType, int paymentId, String uiid) async {
     final provider = context.read<DataProvider>();
     
-    debugPrint('=== INICIANDO DESCARGA ===');
-    debugPrint('fileType: $fileType, paymentId: $paymentId, uiid: $uiid');
-    
     try {
       String base64String;
       String extension;
 
       if (fileType == 'pdf') {
-        debugPrint('Llamando a downloadInvoice para PDF...');
         base64String = await provider.downloadInvoice(paymentId, 'pdf');
         extension = 'pdf';
       } else if (fileType == 'xml') {
-        debugPrint('Llamando a downloadInvoice para XML...');
         base64String = await provider.downloadInvoice(paymentId, 'xml');
         extension = 'xml';
       } else {
-        debugPrint('Llamando a downloadTicket...');
         base64String = await provider.downloadTicket(paymentId);
         extension = 'pdf';
       }
 
-      debugPrint('base64String recibido (primeros 100 chars): ${base64String.substring(0, base64String.length > 100 ? 100 : base64String.length)}...');
-
       // Decodificar base64 y guardar archivo
       final bytes = base64Decode(base64String);
-      debugPrint('Bytes decodificados: ${bytes.length}');
-
-      // Usar getApplicationDocumentsDirectory para que sea visible en Archivos app
+      
+      // Obtener nombre de la app dinámicamente
+      final packageInfo = await PackageInfo.fromPlatform();
+      final appName = packageInfo.appName;
+      
       final directory = await getApplicationDocumentsDirectory();
-      debugPrint('Directorio Documents: ${directory.path}');
-
+      
+      // La carpeta Documents ya tiene el nombre de la app, guardar directamente
       final filePath = '${directory.path}/$uiid.$extension';
-      debugPrint('Ruta del archivo: $filePath');
-
       final file = File(filePath);
       await file.writeAsBytes(bytes);
-      debugPrint('Archivo guardado correctamente');
 
-      debugPrint('Archivo guardado correctamente en: $filePath');
-
-      // NOTA: OpenFile.open tiene problemas con Objective-C en iOS
-      // Por ahora solo guardamos el archivo y mostramos la ruta
+      // Mostrar ubicación del archivo
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${fileType.toUpperCase()} guardado: ${filePath.split('/').last}'),
-            action: SnackBarAction(
-              label: 'Ver ruta',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Archivo guardado'),
-                    content: Text(filePath),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cerrar'),
+        final snackBar = SnackBar(
+          content: Text('${fileType.toUpperCase()} descargado'),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Ver ubicación',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('${fileType.toUpperCase()} descargado'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Archivo guardado en:'),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        filePath,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
                       ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Para ver el archivo:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Text('1. Abre la app Archivos'),
+                      Text('2. Busca los archivos $appName en la lista'),
                     ],
                   ),
-                );
-              },
-            ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         );
+        
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        
+        // Cerrar automáticamente después de 3 segundos
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          }
+        });
       }
     } catch (e) {
-      debugPrint('ERROR EN DESCARGA: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al descargar: $e')),
