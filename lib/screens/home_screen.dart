@@ -193,9 +193,15 @@ class _PaymentsTabState extends State<PaymentsTab> {
       
       final directory = await getApplicationDocumentsDirectory();
       
-      // La carpeta Documents ya tiene el nombre de la app, guardar directamente
-      final filePath = '${directory.path}/$uiid.$extension';
-      final file = File(filePath);
+      // Generar nombre único para evitar sobrescribir
+      String finalFilePath = '${directory.path}/$uiid.$extension';
+      int counter = 1;
+      while (await File(finalFilePath).exists()) {
+        finalFilePath = '${directory.path}/$uiid ($counter).$extension';
+        counter++;
+      }
+      
+      final file = File(finalFilePath);
       await file.writeAsBytes(bytes);
 
       // Mostrar ubicación del archivo
@@ -217,7 +223,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
                       const Text('Archivo guardado en:'),
                       const SizedBox(height: 8),
                       SelectableText(
-                        filePath,
+                        finalFilePath,
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'monospace',
@@ -502,20 +508,22 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                     },
                                   ),
                                 ],
-                                // Botón Ticket
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.receipt_long,
-                                    color: Colors.grey.shade700,
-                                    size: 24,
+                                // Botón Ticket - solo si tiene transaction_id (siempre disponible según tu API)
+                                if (payment.transactionId != null) ...[
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.receipt_long,
+                                      color: Colors.grey.shade700,
+                                      size: 24,
+                                    ),
+                                    tooltip: 'Descargar ticket de pago',
+                                    onPressed: () {
+                                      _downloadFile('ticket', payment.id, payment.uiid);
+                                    },
                                   ),
-                                  tooltip: 'Descargar ticket de pago',
-                                  onPressed: () {
-                                    _downloadFile('ticket', payment.id, payment.uiid);
-                                  },
-                                ),
+                                ],
                                 // Mensaje si no tiene documentos
-                                if (payment.invoiceId == null) ...[
+                                if (payment.invoiceId == null && payment.transactionId == null) ...[
                                   Text(
                                     'Sin documentos disponibles',
                                     style: TextStyle(

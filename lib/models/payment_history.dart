@@ -2,8 +2,8 @@ class PaymentHistory {
   final int id;
   final DateTime createdAt;
   final double amount;
-  final int transactionId;
-  final String? invoiceId;
+  final int? transactionId; // Nullable - ticket disponible solo si tiene transaction_id
+  final String? invoiceId; // Nullable - PDF/XML disponibles solo si tiene invoice_id
   final int key;
   final String uiid;
   final List<PaymentItem> paymentItems;
@@ -12,7 +12,7 @@ class PaymentHistory {
     required this.id,
     required this.createdAt,
     required this.amount,
-    required this.transactionId,
+    this.transactionId,
     this.invoiceId,
     required this.key,
     required this.uiid,
@@ -24,7 +24,7 @@ class PaymentHistory {
       id: json['id'] as int,
       createdAt: DateTime.parse(json['created_at'] as String),
       amount: double.parse(json['amount'] as String),
-      transactionId: json['transaction_id'] as int,
+      transactionId: json['transaction_id'] as int?,
       invoiceId: json['invoice_id'] as String?,
       key: json['key'] as int,
       uiid: json['uiid'] as String,
