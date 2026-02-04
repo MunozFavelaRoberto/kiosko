@@ -348,7 +348,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 1.10,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -475,18 +475,22 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                 ),
                               ],
                             ),
-                            const Spacer(),
+                             const SizedBox(height: 8),
                             // Botones de acción
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 // Botón PDF - solo si tiene invoice_id
                                 if (payment.invoiceId != null) ...[
-                                  IconButton(
+                                  IconButton.outlined(
                                     icon: Icon(
                                       Icons.picture_as_pdf,
                                       color: Colors.red.shade700,
                                       size: 24,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      foregroundColor: Colors.red.shade700,
+                                      side: BorderSide(color: Colors.red.shade700),
                                     ),
                                     tooltip: 'Descargar factura en PDF',
                                     onPressed: () {
@@ -496,11 +500,15 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                 ],
                                 // Botón XML - solo si tiene invoice_id
                                 if (payment.invoiceId != null) ...[
-                                  IconButton(
+                                  IconButton.outlined(
                                     icon: Icon(
                                       Icons.code,
                                       color: Colors.green.shade700,
                                       size: 24,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      foregroundColor: Colors.green.shade700,
+                                      side: BorderSide(color: Colors.green.shade700),
                                     ),
                                     tooltip: 'Descargar factura en XML',
                                     onPressed: () {
@@ -508,13 +516,17 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                     },
                                   ),
                                 ],
-                                // Botón Ticket - solo si tiene transaction_id (siempre disponible según tu API)
+                                // Botón Ticket - solo si tiene transaction_id
                                 if (payment.transactionId != null) ...[
-                                  IconButton(
+                                  IconButton.outlined(
                                     icon: Icon(
                                       Icons.receipt_long,
-                                      color: Colors.grey.shade700,
+                                      color: Colors.blue.shade700,
                                       size: 24,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      foregroundColor: Colors.blue.shade700,
+                                      side: BorderSide(color: Colors.blue.shade700),
                                     ),
                                     tooltip: 'Descargar ticket de pago',
                                     onPressed: () {
