@@ -26,17 +26,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Map<String, dynamic>? _fiscalData;
   bool _isLoading = true;
   bool _requiresInvoice = false;
-  // ValueNotifier para compartir el estado de tarjeta seleccionada con CardsScreen
   final ValueNotifier<CardModel?> _selectedCardNotifier = ValueNotifier<CardModel?>(null);
 
   final ApiService _apiService = ApiService();
-
-  static const Map<String, String> brandLogos = {
-    'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
-    'mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
-    'amex': 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
-    'discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg',
-  };
 
   @override
   void didChangeDependencies() {
@@ -61,22 +53,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (fiscalResponse != null && fiscalResponse['data'] != null) {
         _fiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
       }
-      // Si ya tenemos una tarjeta seleccionada por el usuario, mantenerla
       if (_selectedCard == null) {
-        // Primera vez: seleccionar la favorita o la primera tarjeta
         try {
           _selectedCard = _cards.firstWhere((card) => card.isFavorite == 1);
         } catch (_) {
           _selectedCard = _cards.isNotEmpty ? _cards.first : null;
         }
-        // Actualizar el notifier
         _selectedCardNotifier.value = _selectedCard;
       } else {
-        // Verificar que la tarjeta seleccionada aún existe en la lista
         _selectedCard = _cards.firstWhere(
           (card) => card.id == _selectedCard!.id,
           orElse: () {
-            // Si la tarjeta ya no existe, seleccionar la favorita o la primera
             try {
               return _cards.firstWhere((card) => card.isFavorite == 1);
             } catch (_) {
@@ -293,6 +280,143 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  Widget _buildCardDisplay() {
+    if (_displayCard == null) {
+      return const Center(child: Text('No hay tarjeta favorita seleccionada'));
+    }
+    
+    final logoUrl = CardModel.getBrandLogo(_displayCard!.brand);
+    final colors = CardModel.getBrandColors(_displayCard!.brand);
+    final isDarkColor = _displayCard!.brand.toLowerCase() != 'unknown';
+    final textColor = isDarkColor ? Colors.white : Colors.black;
+    
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [colors['primary']!, colors['secondary']!],
+      stops: const [0.2, 1.0],
+    );
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: gradient,
+            boxShadow: [
+              BoxShadow(
+                color: colors['primary']!.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 12,
+                right: 12,
+                child: logoUrl.isNotEmpty
+                    ? SvgPicture.network(
+                        logoUrl,
+                        height: 30,
+                        width: 45,
+                        fit: BoxFit.contain,
+                      )
+                    : Text(
+                        _displayCard!.brand.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                top: 40,
+                bottom: 50,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _displayCard!.cardNumber,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontFamily: 'Courier New',
+                            fontWeight: FontWeight.w500,
+                            color: textColor,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Titular',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: textColor.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            Text(
+                              _displayCard!.holderName,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Válida hasta',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: textColor.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            Text(
+                              _displayCard!.getFormattedExpiry(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: ElevatedButton(
+            onPressed: _changeCard,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Cambiar Tarjeta'),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -316,7 +440,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 24),
-                        // Monto
                         Center(
                           child: Column(
                             children: [
@@ -348,7 +471,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        // Tarjeta favorita
                         Text(
                           'Tarjeta de Pago',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -357,105 +479,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        if (_displayCard != null) ...[
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: _displayCard!.brand.toLowerCase() == 'visa' ? const Color(0xFF3343a4) : null,
-                              gradient: _displayCard!.brand.toLowerCase() == 'visa'
-                                  ? const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [Color(0xFF3343a4), Color(0xFF5B6BC0)],
-                                      stops: [0.2, 1.0],
-                                    )
-                                  : _displayCard!.brand.toLowerCase() == 'mastercard'
-                                      ? const LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [Color(0xFFec7711), Color(0xFF5B6BC0)],
-                                          stops: [0.2, 1.0],
-                                        )
-                                      : null,
-                              borderRadius: BorderRadius.circular(4),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          _displayCard!.cardNumber,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'monospace',
-                                            color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                      brandLogos.containsKey(_displayCard!.brand.toLowerCase())
-                                          ? SvgPicture.network(
-                                              brandLogos[_displayCard!.brand.toLowerCase()]!,
-                                              height: 24,
-                                              width: 48,
-                                              fit: BoxFit.contain,
-                                            )
-                                          : Text(
-                                              _displayCard!.brand.toUpperCase(),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black,
-                                              ),
-                                            ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Titular:', style: TextStyle(color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
-                                      Text(_displayCard!.holderName, style: TextStyle(color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Válida hasta:', style: TextStyle(color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
-                                      Text('${_displayCard!.expirationMonth}/${_displayCard!.expirationYear}', style: TextStyle(color: _displayCard!.brand.toLowerCase() == 'visa' || _displayCard!.brand.toLowerCase() == 'mastercard' ? Colors.white : Colors.black)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: _changeCard,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Cambiar Tarjeta'),
-                            ),
-                          ),
-                        ] else ...[
-                          const Center(child: Text('No hay tarjeta favorita seleccionada')),
-                        ],
+                        _buildCardDisplay(),
                         const SizedBox(height: 32),
-                        // Switch para factura
                         Row(
                           children: [
                             Switch(
@@ -472,9 +497,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ],
                         ),
                         const SizedBox(height: 32),
-                        // Datos fiscales (solo si necesita factura)
                         if (_requiresInvoice) ...[
-                          // Datos fiscales
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -538,7 +561,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             const Center(child: Text('No hay datos fiscales disponibles')),
                           const SizedBox(height: 32),
                         ],
-                        // Botón de pagar (siempre visible)
                         SizedBox(
                           width: double.infinity,
                           height: 56,

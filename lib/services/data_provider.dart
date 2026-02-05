@@ -3,6 +3,7 @@ import 'package:kiosko/models/category.dart';
 import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
 import 'package:kiosko/models/payment_history.dart';
+import 'package:kiosko/models/payment_response.dart';
 import 'package:kiosko/models/user.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
@@ -222,6 +223,27 @@ class DataProvider extends ChangeNotifier {
     return await _apiService.downloadTicket(
       headers: 'Bearer $token',
       paymentId: paymentId,
+    );
+  }
+
+  // Procesar pago
+  Future<PaymentResponse> processPayment({
+    required List<Map<String, int>> payments,
+    required double total,
+    required String tokenId,
+    required String deviceSessionId,
+    required bool isInvoiceRequired,
+  }) async {
+    final token = await _authService?.getToken();
+    if (token == null) throw Exception('No hay token disponible');
+
+    return await _apiService.processPayment(
+      headers: 'Bearer $token',
+      payments: payments,
+      total: total,
+      tokenId: tokenId,
+      deviceSessionId: deviceSessionId,
+      isInvoiceRequired: isInvoiceRequired,
     );
   }
 }

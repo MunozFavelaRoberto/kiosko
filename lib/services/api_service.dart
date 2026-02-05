@@ -5,6 +5,7 @@ import 'package:http/io_client.dart';
 import 'package:kiosko/models/card.dart';
 import 'package:kiosko/models/payment_detail.dart' as payment_detail;
 import 'package:kiosko/models/payment_history.dart' as payment_history;
+import 'package:kiosko/models/payment_response.dart';
 
 class ApiService {
   // Singleton pattern
@@ -176,6 +177,30 @@ class ApiService {
     );
     final data = response['data'];
     return data['file'] as String;
+  }
+
+  // Procesar pago
+  Future<PaymentResponse> processPayment({
+    required String headers,
+    required List<Map<String, int>> payments,
+    required double total,
+    required String tokenId,
+    required String deviceSessionId,
+    required bool isInvoiceRequired,
+  }) async {
+    final response = await post(
+      '/client/payments/pay',
+      headers: {'Authorization': headers},
+      body: {
+        'payments': payments,
+        'total': total,
+        'token_id': tokenId,
+        'device_session_id': deviceSessionId,
+        'use_card_points': null,
+        'is_invoice_required': isInvoiceRequired,
+      },
+    );
+    return PaymentResponse.fromJson(response['data']);
   }
 
   // Cerrar cliente (llamar al salir de la app)

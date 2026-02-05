@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kiosko/models/card.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AddCardScreen extends StatefulWidget {
   static const routeName = '/add-card';
@@ -24,35 +26,93 @@ class _AddCardScreenState extends State<AddCardScreen> {
   String? _selectedYear;
   bool _isFavorite = false;
   bool _isLoading = false;
-  bool _isCvvVisible = false;
+  final bool _isCvvVisible = false;
+  String _detectedBrand = '';
+  String _cardNumberHint = '1234 5678 9012 3456';
 
-  final List<String> _months = List.generate(12, (index) => (index + 1).toString().padLeft(2, '0'));
-  final List<String> _years = List.generate(11, (index) => (DateTime.now().year + index).toString());
+  late List<String> _months;
+  late List<String> _years;
 
-  final ApiService _apiService = ApiService(); // Singleton
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDates();
+    
+    _cardNumberController.addListener(_detectCardBrand);
+  }
+
+  void _initializeDates() {
+    final now = DateTime.now();
+    final currentYear = now.year;
+
+    _months = List.generate(12, (index) => (index + 1).toString().padLeft(2, '0'));
+    
+    _years = List.generate(11, (index) => (currentYear + index).toString());
+    
+    _selectedMonth = now.month.toString().padLeft(2, '0');
+    _selectedYear = currentYear.toString();
+  }
 
   @override
   void dispose() {
+    _cardNumberController.removeListener(_detectCardBrand);
     _cardNumberController.dispose();
     _holderNameController.dispose();
     _cvvController.dispose();
     super.dispose();
   }
 
+  void _detectCardBrand() {
+    final text = _cardNumberController.text.replaceAll(' ', '');
+    if (text.length >= 2) {
+      final brand = CardModel.detectBrand(text);
+      if (brand != _detectedBrand) {
+        setState(() {
+          _detectedBrand = brand;
+          
+          if (brand == 'amex') {
+            _cardNumberHint = '3456 789012 34567';
+          } else {
+            _cardNumberHint = '1234 5678 9012 3456';
+          }
+          
+          final cvvLength = CardModel.getCvvLength(brand);
+          if (_cvvController.text.length != cvvLength) {
+            _cvvController.clear();
+          }
+        });
+      }
+    }
+  }
+
   String? _validateCardNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Ingrese el número de tarjeta';
     }
+    
     final cleanValue = value.replaceAll(' ', '');
-    if (cleanValue.length != 16 || !RegExp(r'^\d+$').hasMatch(cleanValue)) {
+    final brand = CardModel.detectBrand(cleanValue);
+    final expectedLength = CardModel.getCardNumberLength(brand);
+    
+    if (cleanValue.length != expectedLength) {
+      return 'Número de tarjeta inválido para $brand';
+    }
+    
+    if (!CardModel.validateLuhn(cleanValue)) {
       return 'Número de tarjeta inválido';
     }
+    
     return null;
   }
 
   String? _validateHolderName(String? value) {
     if (value == null || value.isEmpty) {
       return 'Ingrese el nombre del titular';
+    }
+    if (value.length > 50) {
+      return 'Máximo 50 caracteres';
     }
     return null;
   }
@@ -68,6 +128,19 @@ class _AddCardScreenState extends State<AddCardScreen> {
     if (value == null || value.isEmpty) {
       return 'Seleccione el año';
     }
+    
+    final now = DateTime.now();
+    final currentYear = now.year;
+    final selectedYear = int.tryParse(value) ?? 0;
+    final selectedMonth = int.tryParse(_selectedMonth ?? '0') ?? 0;
+    
+    if (selectedYear < currentYear) {
+      return 'La tarjeta está vencida';
+    }
+    if (selectedYear == currentYear && selectedMonth < now.month) {
+      return 'La tarjeta está vencida';
+    }
+    
     return null;
   }
 
@@ -75,9 +148,18 @@ class _AddCardScreenState extends State<AddCardScreen> {
     if (value == null || value.isEmpty) {
       return 'Ingrese el CVV';
     }
-    if (value.length != 3 || !RegExp(r'^\d+$').hasMatch(value)) {
+    
+    final brand = _detectedBrand.isNotEmpty ? _detectedBrand : CardModel.detectBrand(_cardNumberController.text);
+    final expectedLength = CardModel.getCvvLength(brand);
+    
+    if (value.length != expectedLength) {
+      return 'CVV debe tener $expectedLength dígitos';
+    }
+    
+    if (!RegExp(r'^\d+$').hasMatch(value)) {
       return 'CVV inválido';
     }
+    
     return null;
   }
 
@@ -92,7 +174,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       final headers = {'Authorization': 'Bearer $token'};
 
       final body = {
-        'holder_name': _holderNameController.text.trim(),
+        'holder_name': _holderNameController.text.trim().toUpperCase(),
         'card_number': _cardNumberController.text.replaceAll(' ', ''),
         'cvv2': _cvvController.text,
         'expiration_month': _selectedMonth!,
@@ -124,6 +206,22 @@ class _AddCardScreenState extends State<AddCardScreen> {
     }
   }
 
+  Widget _buildCardPrefixIcon() {
+    final logoUrl = CardModel.getBrandLogo(_detectedBrand);
+    
+    if (logoUrl.isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        child: SvgPicture.network(
+          logoUrl,
+          height: 24,
+          width: 36,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+    return const Icon(Icons.credit_card);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,29 +247,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   color: colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _cardNumberController,
                 decoration: InputDecoration(
                   labelText: 'Número de Tarjeta',
-                  hintText: '1234 5678 9012 3456',
+                  hintText: _cardNumberHint,
                   prefixIcon: const Icon(Icons.credit_card),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.help_outline),
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Número de Tarjeta'),
-                        content: const Text('Los 16 dígitos ubicados en la parte frontal de tu tarjeta de crédito o débito.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Entendido'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  suffixIcon: _buildCardPrefixIcon(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -181,7 +264,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(16),
+                  LengthLimitingTextInputFormatter(19),
                   _CardNumberFormatter(),
                 ],
                 validator: _validateCardNumber,
@@ -193,22 +276,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   labelText: 'Nombre del Titular',
                   hintText: 'Como aparece en la tarjeta',
                   prefixIcon: const Icon(Icons.person),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.help_outline),
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Nombre del Titular'),
-                        content: const Text('El nombre impreso en la parte frontal de la tarjeta, exactamente como aparece.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Entendido'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -233,9 +300,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
                         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       ),
                       items: _months.map((month) {
+                        final monthAbbrev = [
+                          'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                          'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                        ];
+                        final monthIndex = int.parse(month) - 1;
                         return DropdownMenuItem(
                           value: month,
-                          child: Text(month),
+                          child: Text('$month - ${monthAbbrev[monthIndex]}'),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -261,7 +333,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       items: _years.map((year) {
                         return DropdownMenuItem(
                           value: year,
-                          child: Text(year.substring(2)),
+                          child: Text(year),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -279,33 +351,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 controller: _cvvController,
                 decoration: InputDecoration(
                   labelText: 'CVV',
-                  hintText: '123',
+                  hintText: _detectedBrand == 'amex' ? '1234' : '123',
                   prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(_isCvvVisible ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _isCvvVisible = !_isCvvVisible),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.help_outline),
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('CVV'),
-                            content: const Text('Los 3 dígitos de seguridad ubicados en la parte trasera de tu tarjeta.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Entendido'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -315,7 +362,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(3),
+                  LengthLimitingTextInputFormatter(_detectedBrand == 'amex' ? 4 : 3),
                 ],
                 obscureText: !_isCvvVisible,
                 validator: _validateCvv,
@@ -330,7 +377,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                         _isFavorite = value;
                       });
                     },
-                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    activeThumbColor: colorScheme.primary,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -388,16 +435,33 @@ class _CardNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text.replaceAll(' ', '');
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      if (i > 0 && i % 4 == 0) {
-        buffer.write(' ');
+    
+    final brand = CardModel.detectBrand(text);
+    
+    if (brand == 'amex') {
+      final buffer = StringBuffer();
+      for (int i = 0; i < text.length; i++) {
+        if (i == 4 || i == 10) {
+          buffer.write(' ');
+        }
+        buffer.write(text[i]);
       }
-      buffer.write(text[i]);
+      return TextEditingValue(
+        text: buffer.toString(),
+        selection: TextSelection.collapsed(offset: buffer.length),
+      );
+    } else {
+      final buffer = StringBuffer();
+      for (int i = 0; i < text.length; i++) {
+        if (i > 0 && i % 4 == 0) {
+          buffer.write(' ');
+        }
+        buffer.write(text[i]);
+      }
+      return TextEditingValue(
+        text: buffer.toString(),
+        selection: TextSelection.collapsed(offset: buffer.length),
+      );
     }
-    return TextEditingValue(
-      text: buffer.toString(),
-      selection: TextSelection.collapsed(offset: buffer.length),
-    );
   }
 }
