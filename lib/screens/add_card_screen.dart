@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kiosko/models/card.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/screens/openpay_webview_screen.dart';
 import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -164,44 +165,82 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   Future<void> _saveCard() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Crear token con OpenPay WebView
+      final tokenResult = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OpenPayWebViewScreen(
+            cardNumber: _cardNumberController.text.replaceAll(' ', ''),
+            holderName: _holderNameController.text.trim().toUpperCase(),
+            expirationMonth: _selectedMonth!,
+            expirationYear: _selectedYear!.substring(2),
+            cvv2: _cvvController.text,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (tokenResult == null || tokenResult.containsKey('error')) {
+        if (tokenResult != null && tokenResult.containsKey('error')) {
+          throw Exception(tokenResult['error']);
+        }
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final tokenId = tokenResult['token_id'] as String;
+      final deviceSessionId = tokenResult['device_session_id'] as String;
+
+      // Guardar la tarjeta con el token
       final authService = context.read<AuthService>();
       final token = await authService.getToken();
+      
+      if (!mounted) return;
+      
       final headers = {'Authorization': 'Bearer $token'};
 
       final body = {
         'holder_name': _holderNameController.text.trim().toUpperCase(),
         'card_number': _cardNumberController.text.replaceAll(' ', ''),
-        'cvv2': _cvvController.text,
-        'expiration_month': _selectedMonth!,
-        'expiration_year': _selectedYear!.substring(2),
+        'token_id': tokenId,
+        'device_session_id': deviceSessionId,
         'is_favorite': _isFavorite ? 1 : 0,
       };
 
-      try {
-        await _apiService.post('/client/cards', headers: headers, body: body);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tarjeta agregada exitosamente')),
-          );
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al agregar tarjeta'))),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+      await _apiService.post('/client/cards', headers: headers, body: body);
+      
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tarjeta agregada exitosamente')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al agregar tarjeta'))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
