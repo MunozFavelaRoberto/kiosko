@@ -13,6 +13,8 @@ import 'package:kiosko/screens/home_screen.dart';
 import 'package:kiosko/screens/profile_screen.dart';
 import 'package:kiosko/screens/biometric_lock_screen.dart';
 import 'package:kiosko/screens/payment_screen.dart';
+import 'package:kiosko/screens/openpay_webview_screen.dart';
+import 'package:kiosko/screens/payment_success_screen.dart';
 import 'package:kiosko/services/auth_service.dart';
 
 Future<void> main() async {
@@ -73,6 +75,15 @@ class KioskoApp extends StatelessWidget {
         BillingScreen.routeName: (context) => const BillingScreen(),
         EditBillingScreen.routeName: (context) => const EditBillingScreen(),
         PaymentScreen.routeName: (context) => const PaymentScreen(),
+        OpenPayDeviceSessionScreen.routeName: (context) => const OpenPayDeviceSessionScreen(),
+        OpenPayWebViewScreen.routeName: (context) => const OpenPayWebViewScreen(
+          cardNumber: '',
+          holderName: '',
+          expirationMonth: '',
+          expirationYear: '',
+          cvv2: '',
+        ),
+        PaymentSuccessScreen.routeName: (context) => const PaymentSuccessScreen(),
       },
     );
   }

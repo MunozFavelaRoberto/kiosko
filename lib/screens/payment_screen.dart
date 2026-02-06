@@ -8,6 +8,8 @@ import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/screens/cards_screen.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
+import 'package:kiosko/screens/openpay_webview_screen.dart';
+import 'package:kiosko/screens/payment_success_screen.dart';
 import 'package:kiosko/utils/error_helper.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +28,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Map<String, dynamic>? _fiscalData;
   bool _isLoading = true;
   bool _requiresInvoice = false;
+  bool _isProcessingPayment = false;
+  String? _deviceSessionId;
   final ValueNotifier<CardModel?> _selectedCardNotifier = ValueNotifier<CardModel?>(null);
 
   final ApiService _apiService = ApiService();
@@ -274,10 +278,123 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  void _pay() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pago no implementado aún')),
-    );
+  void _pay() async {
+    debugPrint('PaymentScreen: _pay() iniciado');
+    
+    if (_selectedCard == null) {
+      debugPrint('PaymentScreen: Error - No hay tarjeta seleccionada');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor selecciona una tarjeta')),
+      );
+      return;
+    }
+
+    debugPrint('PaymentScreen: Tarjeta seleccionada: ${_selectedCard!.cardNumber}');
+    debugPrint('PaymentScreen: cardId (token): ${_selectedCard!.cardId}');
+
+    // Obtener device session ID solo si no lo tenemos
+    if (_deviceSessionId == null) {
+      debugPrint('PaymentScreen: Obteniendo device session ID...');
+      try {
+        final deviceResult = await Navigator.push<Map<String, dynamic>>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OpenPayDeviceSessionScreen(),
+          ),
+        );
+
+        debugPrint('PaymentScreen: deviceResult recibido: $deviceResult');
+
+        if (!mounted) return;
+
+        if (deviceResult == null || deviceResult.containsKey('error')) {
+          if (deviceResult != null && deviceResult.containsKey('error')) {
+            debugPrint('PaymentScreen: Error en device session: ${deviceResult["error"]}');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: ${deviceResult["error"]}')),
+            );
+          }
+          return;
+        }
+
+        _deviceSessionId = deviceResult['device_session_id'] as String;
+        debugPrint('PaymentScreen: Device session ID obtenido: $_deviceSessionId');
+      } catch (e) {
+        debugPrint('PaymentScreen: Excepción al obtener device session: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al obtener device session: $e')),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
+    try {
+      // El card_id de la tarjeta ya es el token_id de OpenPay
+      final tokenId = _selectedCard!.cardId;
+      debugPrint('PaymentScreen: Enviando pago con tokenId: $tokenId');
+
+      // Enviar el pago al servidor
+      final authService = context.read<AuthService>();
+      final token = await authService.getToken();
+      
+      if (!mounted) return;
+      
+      final headers = {'Authorization': 'Bearer $token'};
+
+      final dataProvider = context.read<DataProvider>();
+      final outstandingPayments = await _apiService.getOutstandingPayments(headers: headers);
+
+      debugPrint('PaymentScreen: Payments obtenidos: ${outstandingPayments.length}');
+
+      if (!mounted) return;
+
+      final body = {
+        'token_id': tokenId,
+        'device_session_id': _deviceSessionId,
+        'use_card_points': null,
+        'is_invoice_required': _requiresInvoice,
+        'total': dataProvider.outstandingAmount,
+        'payments': outstandingPayments.map((p) => {
+          'payment_id': p.paymentId,
+        }).toList(),
+      };
+
+      debugPrint('PaymentScreen: Enviando body: $body');
+      
+      await _apiService.post('/client/payments/pay', headers: headers, body: body);
+      
+      debugPrint('PaymentScreen: Pago exitoso!');
+
+      if (!mounted) return;
+
+      // Navegar a la pantalla de éxito
+      Navigator.pushReplacementNamed(context, PaymentSuccessScreen.routeName);
+    } catch (e) {
+      debugPrint('PaymentScreen: Error en pago: $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ErrorHelper.parseError(e.toString(), 
+            defaultMsg: 'Error al procesar el pago')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
+      }
+    }
   }
 
   Widget _buildCardDisplay() {
@@ -565,13 +682,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           width: double.infinity,
                           height: 56,
                           child: FilledButton(
-                            onPressed: _pay,
+                            onPressed: _isProcessingPayment ? null : _pay,
                             style: FilledButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('Pagar', style: TextStyle(fontSize: 18)),
+                            child: _isProcessingPayment
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
                           ),
                         ),
                       ],
