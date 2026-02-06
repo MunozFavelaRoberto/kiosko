@@ -246,4 +246,15 @@ class DataProvider extends ChangeNotifier {
       isInvoiceRequired: isInvoiceRequired,
     );
   }
+
+  // Refresh completo para pull-to-refresh
+  Future<void> refreshAllData() async {
+    await Future.wait([
+      fetchUser(),
+      fetchOutstandingPayments(),
+      fetchPaymentHistory(),
+      fetchCategories(),
+      fetchServices(),
+    ]);
+  }
 }

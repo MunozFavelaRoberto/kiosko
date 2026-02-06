@@ -64,6 +64,10 @@ class _CardsScreenState extends State<CardsScreen> {
     }
   }
 
+  Future<void> _refreshCards() async {
+    await _loadCards();
+  }
+
   Future<void> _toggleFavorite(int cardId, CardModel card) async {
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
@@ -127,8 +131,15 @@ class _CardsScreenState extends State<CardsScreen> {
     }
   }
 
-  void _addCard() {
-    Navigator.pushNamed(context, AddCardScreen.routeName);
+  void _addCard() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddCardScreen()),
+    );
+    // Recargar tarjetas si se agregó una nueva
+    if (result == true) {
+      _refreshCards();
+    }
   }
 
   Widget _buildCardWidget(CardModel card) {
@@ -304,6 +315,8 @@ class _CardsScreenState extends State<CardsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.selectionMode == CardsSelectionMode.select 
@@ -311,96 +324,99 @@ class _CardsScreenState extends State<CardsScreen> {
             : 'Tarjetas'),
         elevation: 4,
       ),
-      body: Column(
-        children: [
-          const ClientNumberHeader(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _cards.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.credit_card_off,
-                                size: 60,
-                                color: Colors.grey.shade300,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'No hay tarjetas registradas',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
+      body: RefreshIndicator(
+        onRefresh: _refreshCards,
+        color: theme.colorScheme.primary,
+        child: Column(
+          children: [
+            const ClientNumberHeader(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _cards.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.credit_card_off,
+                                  size: 60,
+                                  color: Colors.grey.shade300,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Agrega una tarjeta para realizar pagos más rápido',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No hay tarjetas registradas',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          int crossAxisCount = 1;
-                          double childAspectRatio = 1.8;
-                          
-                          if (constraints.maxWidth >= 600) {
-                            crossAxisCount = 2;
-                            childAspectRatio = 1.7;
-                          }
-                          if (constraints.maxWidth >= 900) {
-                            crossAxisCount = 3;
-                            childAspectRatio = 1.5;
-                          }
-
-                          return GridView.builder(
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              childAspectRatio: childAspectRatio,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Agrega una tarjeta para realizar pagos más rápido',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            itemCount: _cards.length,
-                            itemBuilder: (context, index) {
-                              final card = _cards[index];
-                              return _buildCardWidget(card);
-                            },
-                          );
-                        },
-                      ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: _addCard,
-              icon: const Icon(Icons.add),
-              label: Text(
-                widget.selectionMode == CardsSelectionMode.select 
-                    ? 'Agregar Nueva Tarjeta' 
-                    : 'Agregar Tarjeta',
-              ),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            int crossAxisCount = 1;
+                            double childAspectRatio = 1.8;
+                            
+                            if (constraints.maxWidth >= 600) {
+                              crossAxisCount = 2;
+                              childAspectRatio = 1.7;
+                            }
+                            if (constraints.maxWidth >= 900) {
+                              crossAxisCount = 3;
+                              childAspectRatio = 1.5;
+                            }
+
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: childAspectRatio,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                              itemCount: _cards.length,
+                              itemBuilder: (context, index) {
+                                final card = _cards[index];
+                                return _buildCardWidget(card);
+                              },
+                            );
+                          },
+                        ),
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ElevatedButton.icon(
+          onPressed: _addCard,
+          icon: const Icon(Icons.add),
+          label: Text(
+            widget.selectionMode == CardsSelectionMode.select 
+                ? 'Agregar Nueva Tarjeta' 
+                : 'Agregar Tarjeta',
           ),
-        ],
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+          ),
+        ),
       ),
     );
   }
 }
-

@@ -88,6 +88,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+    // Limpiar device session ID para forzar nueva obtención
+    _deviceSessionId = null;
+    await _loadData();
+  }
+
   @override
   void dispose() {
     _selectedCardNotifier.dispose();
@@ -105,7 +115,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _changeCard() async {
-    final selectedCard = await Navigator.push<CardModel>(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => ValueListenableBuilder<CardModel?>(
@@ -116,21 +126,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
             onSelect: (card) {
               _selectedCard = card;
               _selectedCardNotifier.value = card;
-              Navigator.pop(context, card);
+              Navigator.pop(context, true);
             },
           ),
         ),
       ),
     );
-    if (selectedCard != null) {
-      setState(() {
-        _selectedCard = selectedCard;
-      });
+    // Recargar datos si volvió de seleccionar tarjeta
+    if (result == true) {
+      _refreshData();
     }
   }
 
-  void _changeFiscalData() {
-    Navigator.pushNamed(context, EditBillingScreen.routeName);
+  void _changeFiscalData() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const EditBillingScreen()),
+    );
+    // Recargar datos si volvió de editar información fiscal
+    if (result == true) {
+      _refreshData();
+    }
   }
 
   Future<void> _showPaymentDetails() async {
@@ -545,166 +561,171 @@ class _PaymentScreenState extends State<PaymentScreen> {
       appBar: AppBar(
         title: const Text('Pago'),
       ),
-      body: Column(
-        children: [
-          const ClientNumberHeader(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 24),
-                        Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Total',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: colorScheme.primary,
+        child: Column(
+          children: [
+            const ClientNumberHeader(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 24),
+                          Center(
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Total',
+                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '\$${amount.toStringAsFixed(2)}',
-                                style: theme.textTheme.displayMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
+                                const SizedBox(height: 8),
+                                Text(
+                                  '\$${amount.toStringAsFixed(2)}',
+                                  style: theme.textTheme.displayMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _showPaymentDetails,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.lightBlue,
-                                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _showPaymentDetails,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.lightBlue,
+                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                  ),
+                                  child: const Text('Detalle'),
                                 ),
-                                child: const Text('Detalle'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Tarjeta de Pago',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildCardDisplay(),
-                        const SizedBox(height: 32),
-                        Row(
-                          children: [
-                            Switch(
-                              value: _requiresInvoice,
-                              onChanged: (value) {
-                                setState(() {
-                                  _requiresInvoice = value;
-                                });
-                              },
-                              activeThumbColor: colorScheme.primary,
+                              ],
                             ),
-                            const SizedBox(width: 16),
-                            const Text('Necesito factura'),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
-                        if (_requiresInvoice) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Información fiscal',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              OutlinedButton.icon(
-                                onPressed: _changeFiscalData,
-                                icon: const Icon(Icons.edit, color: Colors.orange),
-                                label: const Text('Cambiar'),
-                              ),
-                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          Text(
+                            'Tarjeta de Pago',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          if (_fiscalData != null)
-                            Card(
-                              elevation: 0,
-                              color: theme.colorScheme.surface.withAlpha(230),
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: [
-                                  ListTile(
-                                    title: const Text('RFC'),
-                                    subtitle: Text(_fiscalData!['code'] ?? 'N/A'),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    title: const Text('Razón Social'),
-                                    subtitle: Text(_fiscalData!['name'] ?? 'N/A'),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    title: const Text('Código Postal'),
-                                    subtitle: Text(_fiscalData!['zip'] ?? 'N/A'),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    title: const Text('Régimen Fiscal'),
-                                    subtitle: Text(_fiscalData!['fiscal_regime'] != null
-                                        ? '${_fiscalData!['fiscal_regime']['code']} - ${_fiscalData!['fiscal_regime']['name']}'
-                                        : 'N/A'),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    title: const Text('Uso de CFDI'),
-                                    subtitle: Text(_fiscalData!['cfdi_usage'] != null
-                                        ? '${_fiscalData!['cfdi_usage']['code']} - ${_fiscalData!['cfdi_usage']['name']}'
-                                        : 'N/A'),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            const Center(child: Text('No hay datos fiscales disponibles')),
+                          _buildCardDisplay(),
                           const SizedBox(height: 32),
-                        ],
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton(
-                            onPressed: _isProcessingPayment ? null : _pay,
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          Row(
+                            children: [
+                              Switch(
+                                value: _requiresInvoice,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _requiresInvoice = value;
+                                  });
+                                },
+                                activeThumbColor: colorScheme.primary,
                               ),
-                            ),
-                            child: _isProcessingPayment
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 16),
+                              const Text('Necesito factura'),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 32),
+                          if (_requiresInvoice) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Información fiscal',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: _changeFiscalData,
+                                  icon: const Icon(Icons.edit, color: Colors.orange),
+                                  label: const Text('Cambiar'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            if (_fiscalData != null)
+                              Card(
+                                elevation: 0,
+                                color: theme.colorScheme.surface.withAlpha(230),
+                                shape: RoundedRectangleBorder(
+                                  side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: [
+                                    ListTile(
+                                      title: const Text('RFC'),
+                                      subtitle: Text(_fiscalData!['code'] ?? 'N/A'),
+                                    ),
+                                    const Divider(),
+                                    ListTile(
+                                      title: const Text('Razón Social'),
+                                      subtitle: Text(_fiscalData!['name'] ?? 'N/A'),
+                                    ),
+                                    const Divider(),
+                                    ListTile(
+                                      title: const Text('Código Postal'),
+                                      subtitle: Text(_fiscalData!['zip'] ?? 'N/A'),
+                                    ),
+                                    const Divider(),
+                                    ListTile(
+                                      title: const Text('Régimen Fiscal'),
+                                      subtitle: Text(_fiscalData!['fiscal_regime'] != null
+                                          ? '${_fiscalData!['fiscal_regime']['code']} - ${_fiscalData!['fiscal_regime']['name']}'
+                                          : 'N/A'),
+                                    ),
+                                    const Divider(),
+                                    ListTile(
+                                      title: const Text('Uso de CFDI'),
+                                      subtitle: Text(_fiscalData!['cfdi_usage'] != null
+                                          ? '${_fiscalData!['cfdi_usage']['code']} - ${_fiscalData!['cfdi_usage']['name']}'
+                                          : 'N/A'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              const Center(child: Text('No hay datos fiscales disponibles')),
+                            const SizedBox(height: 32),
+                          ],
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton(
+                              onPressed: _isProcessingPayment ? null : _pay,
+                              style: FilledButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isProcessingPayment
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -84,61 +84,79 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  Future<void> _refreshData() async {
+    final dataProvider = context.read<DataProvider>();
+    await dataProvider.refreshAllData();
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
+    final theme = Theme.of(context);
     
-    return Column(
-      children: [
-        const ClientNumberHeader(),
-        Expanded(
-          child: () {
-            if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-            if (provider.isUnauthorized) return const Center(child: Text('No autorizado', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)));
-            if (provider.user == null) return const Center(child: Text('Error al cargar usuario'));
-            
-            final amount = provider.outstandingAmount;
-            final status = amount <= 0 ? 'Pagado' : 'Pendiente';
-            final statusColor = status == 'Pagado' ? Colors.green : Colors.yellow.shade800;
-            
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Estatus:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 28,
-                        color: statusColor,
-                      ),
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      color: theme.colorScheme.primary,
+      child: Column(
+        children: [
+          const ClientNumberHeader(),
+          Expanded(
+            child: () {
+              if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+              if (provider.isUnauthorized) return const Center(child: Text('No autorizado', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)));
+              if (provider.user == null) return const Center(child: Text('Error al cargar usuario'));
+              
+              final amount = provider.outstandingAmount;
+              final status = amount <= 0 ? 'Pagado' : 'Pendiente';
+              final statusColor = status == 'Pagado' ? Colors.green : Colors.yellow.shade800;
+              
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Estatus:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 28,
+                            color: statusColor,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text('\$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 32),
+                        ElevatedButton(
+                          onPressed: status == 'Pendiente' ? () {
+                            Navigator.pushNamed(context, PaymentScreen.routeName);
+                          } : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+                          ),
+                          child: const Text('Pagar', style: TextStyle(fontSize: 24)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    Text('\$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: status == 'Pendiente' ? () {
-                        Navigator.pushNamed(context, PaymentScreen.routeName);
-                      } : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-                      ),
-                      child: const Text('Pagar', style: TextStyle(fontSize: 24)),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          }(),
-        ),
-      ],
+              );
+            }(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -164,6 +182,11 @@ class _PaymentsTabState extends State<PaymentsTab> {
       return payment.paymentItems[0].payment?.description ?? 'Sin descripción';
     }
     return 'Sin descripción';
+  }
+
+  Future<void> _refreshData() async {
+    final dataProvider = context.read<DataProvider>();
+    await dataProvider.refreshAllData();
   }
 
   Future<void> _downloadFile(String fileType, int paymentId, String uiid) async {
@@ -274,289 +297,294 @@ class _PaymentsTabState extends State<PaymentsTab> {
     final payments = provider.paymentHistory;
     final isLoading = provider.isLoading;
     final isUnauthorized = provider.isUnauthorized;
+    final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        const ClientNumberHeader(),
-        Expanded(
-          child: () {
-            if (isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      color: theme.colorScheme.primary,
+      child: Column(
+        children: [
+          const ClientNumberHeader(),
+          Expanded(
+            child: () {
+              if (isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (isUnauthorized) {
-              return const Center(
-                child: Text(
-                  'No autorizado',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+              if (isUnauthorized) {
+                return const Center(
+                  child: Text(
+                    'No autorizado',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
                   ),
-                ),
-              );
-            }
-
-            // Estado vacío
-            if (payments.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.credit_card_off,
-                        size: 60,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No hay pagos registrados',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'No se encontraron pagos para este cliente',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            // Grid de pagos
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                // Determinar número de columnas según el ancho
-                int crossAxisCount = 1;
-                if (constraints.maxWidth >= 600) crossAxisCount = 2;
-                if (constraints.maxWidth >= 900) crossAxisCount = 3;
-                if (constraints.maxWidth >= 1200) crossAxisCount = 4;
-
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 1.10,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: payments.length,
-                  itemBuilder: (context, index) {
-                    final payment = payments[index];
-                    return Card(
-                      elevation: 6,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Folio y estatus
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Folio',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      Text(
-                                        payment.uiid,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'Pagado',
-                                    style: TextStyle(
-                                      color: Colors.green.shade700,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      textBaseline: TextBaseline.alphabetic,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: 16),
-                            // Descripción
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Descripción',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _getPaymentDescription(payment),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Fecha
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Fecha',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatDate(payment.createdAt),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Monto
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Monto',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '\$${payment.amount.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                             const SizedBox(height: 8),
-                            // Botones de acción
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                // Botón PDF - solo si tiene invoice_id
-                                if (payment.invoiceId != null) ...[
-                                  IconButton.outlined(
-                                    icon: Icon(
-                                      Icons.picture_as_pdf,
-                                      color: Colors.red.shade700,
-                                      size: 24,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: Colors.red.shade700,
-                                      side: BorderSide(color: Colors.red.shade700),
-                                    ),
-                                    tooltip: 'Descargar factura en PDF',
-                                    onPressed: () {
-                                      _downloadFile('pdf', payment.id, payment.uiid);
-                                    },
-                                  ),
-                                ],
-                                // Botón XML - solo si tiene invoice_id
-                                if (payment.invoiceId != null) ...[
-                                  IconButton.outlined(
-                                    icon: Icon(
-                                      Icons.code,
-                                      color: Colors.green.shade700,
-                                      size: 24,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: Colors.green.shade700,
-                                      side: BorderSide(color: Colors.green.shade700),
-                                    ),
-                                    tooltip: 'Descargar factura en XML',
-                                    onPressed: () {
-                                      _downloadFile('xml', payment.id, payment.uiid);
-                                    },
-                                  ),
-                                ],
-                                // Botón Ticket - solo si tiene transaction_id
-                                if (payment.transactionId != null) ...[
-                                  IconButton.outlined(
-                                    icon: Icon(
-                                      Icons.receipt_long,
-                                      color: Colors.blue.shade700,
-                                      size: 24,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: Colors.blue.shade700,
-                                      side: BorderSide(color: Colors.blue.shade700),
-                                    ),
-                                    tooltip: 'Descargar ticket de pago',
-                                    onPressed: () {
-                                      _downloadFile('ticket', payment.id, payment.uiid);
-                                    },
-                                  ),
-                                ],
-                                // Mensaje si no tiene documentos
-                                if (payment.invoiceId == null && payment.transactionId == null) ...[
-                                  Text(
-                                    'Sin documentos disponibles',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
                 );
-              },
-            );
-          }(),
-        ),
-      ],
+              }
+
+              // Estado vacío
+              if (payments.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.credit_card_off,
+                          size: 60,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No hay pagos registrados',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'No se encontraron pagos para este cliente',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              // Grid de pagos
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  // Determinar número de columnas según el ancho
+                  int crossAxisCount = 1;
+                  if (constraints.maxWidth >= 600) crossAxisCount = 2;
+                  if (constraints.maxWidth >= 900) crossAxisCount = 3;
+                  if (constraints.maxWidth >= 1200) crossAxisCount = 4;
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 1.10,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: payments.length,
+                    itemBuilder: (context, index) {
+                      final payment = payments[index];
+                      return Card(
+                        elevation: 6,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Folio y estatus
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Folio',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        Text(
+                                          payment.uiid,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Pagado',
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        textBaseline: TextBaseline.alphabetic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 16),
+                              // Descripción
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Descripción',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _getPaymentDescription(payment),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Fecha
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Fecha',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatDate(payment.createdAt),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Monto
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Monto',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '\$${payment.amount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // Botones de acción
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Botón PDF - solo si tiene invoice_id
+                                  if (payment.invoiceId != null) ...[
+                                    IconButton.outlined(
+                                      icon: Icon(
+                                        Icons.picture_as_pdf,
+                                        color: Colors.red.shade700,
+                                        size: 24,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        foregroundColor: Colors.red.shade700,
+                                        side: BorderSide(color: Colors.red.shade700),
+                                      ),
+                                      tooltip: 'Descargar factura en PDF',
+                                      onPressed: () {
+                                        _downloadFile('pdf', payment.id, payment.uiid);
+                                      },
+                                    ),
+                                  ],
+                                  // Botón XML - solo si tiene invoice_id
+                                  if (payment.invoiceId != null) ...[
+                                    IconButton.outlined(
+                                      icon: Icon(
+                                        Icons.code,
+                                        color: Colors.green.shade700,
+                                        size: 24,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        foregroundColor: Colors.green.shade700,
+                                        side: BorderSide(color: Colors.green.shade700),
+                                      ),
+                                      tooltip: 'Descargar factura en XML',
+                                      onPressed: () {
+                                        _downloadFile('xml', payment.id, payment.uiid);
+                                      },
+                                    ),
+                                  ],
+                                  // Botón Ticket - solo si tiene transaction_id
+                                  if (payment.transactionId != null) ...[
+                                    IconButton.outlined(
+                                      icon: Icon(
+                                        Icons.receipt_long,
+                                        color: Colors.blue.shade700,
+                                        size: 24,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        foregroundColor: Colors.blue.shade700,
+                                        side: BorderSide(color: Colors.blue.shade700),
+                                      ),
+                                      tooltip: 'Descargar ticket de pago',
+                                      onPressed: () {
+                                        _downloadFile('ticket', payment.id, payment.uiid);
+                                      },
+                                    ),
+                                  ],
+                                  // Mensaje si no tiene documentos
+                                  if (payment.invoiceId == null && payment.transactionId == null) ...[
+                                    Text(
+                                      'Sin documentos disponibles',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            }(),
+          ),
+        ],
+      ),
     );
   }
 }

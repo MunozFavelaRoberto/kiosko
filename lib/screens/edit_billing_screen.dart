@@ -106,6 +106,10 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await _loadCatalogs();
+  }
+
   String? _validateRFC(String? value) {
     if (value == null || value.isEmpty) {
       return 'Ingrese el RFC';
@@ -200,7 +204,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
               SnackBar(content: Text(response['msg'] ?? 'Operación completada')),
             );
             if (response['msg'] == 'Registro editado correctamente') {
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             }
           }
         } else {
@@ -230,142 +234,147 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
         title: const Text('Editar datos fiscales'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Información fiscal',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _rfcController,
-                decoration: InputDecoration(
-                  labelText: 'RFC',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: colorScheme.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Información fiscal',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
                   ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 ),
-                validator: _validateRFC,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _razonSocialController,
-                decoration: InputDecoration(
-                  labelText: 'Razón Social',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                ),
-                validator: _validateRazonSocial,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _codigoPostalController,
-                decoration: InputDecoration(
-                  labelText: 'Código Postal',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                ),
-                keyboardType: TextInputType.number,
-                validator: _validateCodigoPostal,
-              ),
-              const SizedBox(height: 16),
-              if (_loadingCatalogs)
-                const Center(child: CircularProgressIndicator())
-              else
-                FormField<String>(
-                  initialValue: _selectedRegimen,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Seleccione un Régimen Fiscal';
-                    }
-                    return null;
-                  },
-                  builder: (FormFieldState<String> state) {
-                    return DropdownMenu<String>(
-                      label: const Text('Régimen Fiscal'),
-                      initialSelection: _selectedRegimen,
-                      dropdownMenuEntries: _regimenes.map((reg) {
-                        final name = reg['name'].length > 30 ? reg['name'].substring(0, 30) + '...' : reg['name'];
-                        final value = '${reg['code']} - $name';
-                        return DropdownMenuEntry(value: value, label: value);
-                      }).toList(),
-                      onSelected: (value) {
-                        state.didChange(value);
-                        setState(() {
-                          _selectedRegimen = value;
-                        });
-                      },
-                      width: MediaQuery.of(context).size.width - 32,
-                      menuHeight: 200.0,
-                      errorText: state.errorText,
-                    );
-                  },
-                ),
-              const SizedBox(height: 16),
-              if (_loadingCatalogs)
-                const Center(child: CircularProgressIndicator())
-              else
-                FormField<String>(
-                  initialValue: _selectedUsoCFDI,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Seleccione un Uso de CFDI';
-                    }
-                    return null;
-                  },
-                  builder: (FormFieldState<String> state) {
-                    return DropdownMenu<String>(
-                      label: const Text('Uso de CFDI'),
-                      initialSelection: _selectedUsoCFDI,
-                      dropdownMenuEntries: _usosCFDI.map((uso) {
-                        final name = uso['name'].length > 30 ? uso['name'].substring(0, 30) + '...' : uso['name'];
-                        final value = '${uso['code']} - $name';
-                        return DropdownMenuEntry(value: value, label: value);
-                      }).toList(),
-                      onSelected: (value) {
-                        state.didChange(value);
-                        setState(() {
-                          _selectedUsoCFDI = value;
-                        });
-                      },
-                      width: MediaQuery.of(context).size.width - 32,
-                      menuHeight: 200.0,
-                      errorText: state.errorText,
-                    );
-                  },
-                ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: _saveBillingInfo,
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _rfcController,
+                  decoration: InputDecoration(
+                    labelText: 'RFC',
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
-                  child: const Text('Guardar Cambios', style: TextStyle(fontSize: 16)),
+                  validator: _validateRFC,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _razonSocialController,
+                  decoration: InputDecoration(
+                    labelText: 'Razón Social',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ),
+                  validator: _validateRazonSocial,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _codigoPostalController,
+                  decoration: InputDecoration(
+                    labelText: 'Código Postal',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: _validateCodigoPostal,
+                ),
+                const SizedBox(height: 16),
+                if (_loadingCatalogs)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  FormField<String>(
+                    initialValue: _selectedRegimen,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Seleccione un Régimen Fiscal';
+                      }
+                      return null;
+                    },
+                    builder: (FormFieldState<String> state) {
+                      return DropdownMenu<String>(
+                        label: const Text('Régimen Fiscal'),
+                        initialSelection: _selectedRegimen,
+                        dropdownMenuEntries: _regimenes.map((reg) {
+                          final name = reg['name'].length > 30 ? reg['name'].substring(0, 30) + '...' : reg['name'];
+                          final value = '${reg['code']} - $name';
+                          return DropdownMenuEntry(value: value, label: value);
+                        }).toList(),
+                        onSelected: (value) {
+                          state.didChange(value);
+                          setState(() {
+                            _selectedRegimen = value;
+                          });
+                        },
+                        width: MediaQuery.of(context).size.width - 32,
+                        menuHeight: 200.0,
+                        errorText: state.errorText,
+                      );
+                    },
+                  ),
+                const SizedBox(height: 16),
+                if (_loadingCatalogs)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  FormField<String>(
+                    initialValue: _selectedUsoCFDI,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Seleccione un Uso de CFDI';
+                      }
+                      return null;
+                    },
+                    builder: (FormFieldState<String> state) {
+                      return DropdownMenu<String>(
+                        label: const Text('Uso de CFDI'),
+                        initialSelection: _selectedUsoCFDI,
+                        dropdownMenuEntries: _usosCFDI.map((uso) {
+                          final name = uso['name'].length > 30 ? uso['name'].substring(0, 30) + '...' : uso['name'];
+                          final value = '${uso['code']} - $name';
+                          return DropdownMenuEntry(value: value, label: value);
+                        }).toList(),
+                        onSelected: (value) {
+                          state.didChange(value);
+                          setState(() {
+                            _selectedUsoCFDI = value;
+                          });
+                        },
+                        width: MediaQuery.of(context).size.width - 32,
+                        menuHeight: 200.0,
+                        errorText: state.errorText,
+                      );
+                    },
+                  ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton(
+                    onPressed: _saveBillingInfo,
+                    style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Guardar Cambios', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

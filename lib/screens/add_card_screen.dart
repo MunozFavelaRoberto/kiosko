@@ -188,7 +188,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Tarjeta agregada exitosamente')),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         }
       } catch (e) {
         if (mounted) {
