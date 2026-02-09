@@ -24,6 +24,7 @@ class DataProvider extends ChangeNotifier {
   double _outstandingAmount = 0.0;
   bool _isLoading = false;
   bool _isUnauthorized = false;
+  bool _isInitialLoading = true; // Flag para controlar la carga inicial
 
   List<Category> get categories => _categories;
   List<Service> get services => _services;
@@ -33,26 +34,23 @@ class DataProvider extends ChangeNotifier {
   double get outstandingAmount => _outstandingAmount;
   bool get isLoading => _isLoading;
   bool get isUnauthorized => _isUnauthorized;
+  bool get isInitialLoading => _isInitialLoading;
 
   Future<void> fetchCategories() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       final data = await _apiService.get('/categories');
       _categories = (data as List<dynamic>).map((json) => Category.fromJson(json)).toList();
     } catch (e) {
       debugPrint('Error fetching categories: $e');
-      // Puedes mostrar un snackbar o manejar el error
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> fetchServices() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       final data = await _apiService.get('/services');
@@ -61,13 +59,11 @@ class DataProvider extends ChangeNotifier {
       debugPrint('Error fetching services: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> fetchPayments() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       final data = await _apiService.get('/payments');
@@ -76,13 +72,11 @@ class DataProvider extends ChangeNotifier {
       debugPrint('Error fetching payments: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> fetchOutstandingPayments() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       final token = await _authService?.getToken();
@@ -100,13 +94,11 @@ class DataProvider extends ChangeNotifier {
       _outstandingAmount = 0.0;
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> fetchPaymentHistory() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       final token = await _authService?.getToken();
@@ -122,13 +114,11 @@ class DataProvider extends ChangeNotifier {
       _paymentHistory = [];
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
   Future<void> fetchUser() async {
     _isLoading = true;
-    notifyListeners();
 
     try {
       // Llamar a la API para obtener datos del perfil del cliente
@@ -149,15 +139,19 @@ class DataProvider extends ChangeNotifier {
             fullName: currentUser.fullName,
             email: currentUser.email,
           );
+          _isInitialLoading = false;
           debugPrint('Usuario obtenido de perfil: ${_user!.fullName} - Cliente: ${_user!.clientNumber}');
         } else {
+          _isInitialLoading = false;
           throw Exception('No hay datos de usuario disponibles');
         }
       } else {
+        _isInitialLoading = false;
         throw Exception('No hay token disponible');
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
+      _isInitialLoading = false;
       // Verificar si es error de autorización (401)
       if (e.toString().contains('No autorizado')) {
         _isUnauthorized = true;
@@ -168,7 +162,6 @@ class DataProvider extends ChangeNotifier {
       _user = null;
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
 
@@ -183,6 +176,7 @@ class DataProvider extends ChangeNotifier {
       if (response != null) {
         // Recargar pagos después de crear
         await fetchPayments();
+        notifyListeners();
         return true;
       }
       return false;
@@ -247,8 +241,10 @@ class DataProvider extends ChangeNotifier {
     );
   }
 
-  // Refresh completo para pull-to-refresh
+  // Refresh completo para pull-to-refresh (usa notifyListeners)
   Future<void> refreshAllData() async {
+    _isInitialLoading = false;
+    
     await Future.wait([
       fetchUser(),
       fetchOutstandingPayments(),
@@ -256,5 +252,8 @@ class DataProvider extends ChangeNotifier {
       fetchCategories(),
       fetchServices(),
     ]);
+    
+    // Solo hacer notifyListeners() después de que todo termine
+    notifyListeners();
   }
 }

@@ -9,6 +9,267 @@ import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/utils/app_routes.dart';
 
+// Widget de Skeleton Loader para efecto de carga profesional
+class SkeletonLoader extends StatefulWidget {
+  final Widget child;
+  final bool enabled;
+  
+  const SkeletonLoader({
+    super.key,
+    required this.child,
+    this.enabled = true,
+  });
+  
+  @override
+  State<SkeletonLoader> createState() => _SkeletonLoaderState();
+}
+
+class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutSine,
+    );
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) {
+      return widget.child;
+    }
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: const [0.0, 0.5, 1.0],
+              colors: [
+                Colors.grey.shade300,
+                Colors.grey.shade200,
+                Colors.grey.shade300,
+              ],
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+// Pantalla de carga completa (Splash Screen profesional)
+class InitialLoadingScreen extends StatelessWidget {
+  const InitialLoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade700,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/svr_logo.png', height: 80),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
+              color: Colors.white,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Cargando información...',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Placeholder para el HomeTab
+class HomeTabSkeleton extends StatelessWidget {
+  const HomeTabSkeleton({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return SkeletonLoader(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Estatus skeleton
+                Container(
+                  width: 120,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Monto skeleton
+                Container(
+                  width: 200,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Botón skeleton
+                Container(
+                  width: 180,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Placeholder para PaymentsTab
+class PaymentsTabSkeleton extends StatelessWidget {
+  const PaymentsTabSkeleton({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 1;
+        if (constraints.maxWidth >= 600) crossAxisCount = 2;
+        if (constraints.maxWidth >= 900) crossAxisCount = 3;
+        if (constraints.maxWidth >= 1200) crossAxisCount = 4;
+        
+        return SkeletonLoader(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: 1.10,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: 4,
+            itemBuilder: (context, index) {
+              return Card(
+                elevation: 6,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Folio skeleton
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          Container(
+                            width: 60,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 16),
+                      // Descripción skeleton
+                      Container(
+                        width: double.infinity,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 100,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Fecha skeleton
+                      Container(
+                        width: 80,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Monto skeleton
+                      Container(
+                        width: 100,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,18 +280,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late final Future<void> _initialDataFuture;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dataProvider = Provider.of<DataProvider>(context, listen: false);
-      dataProvider.fetchUser();
-      dataProvider.fetchOutstandingPayments();
-      dataProvider.fetchCategories();
-      dataProvider.fetchServices();
-      dataProvider.fetchPaymentHistory();
-    });
+    // Iniciar carga de datos inmediatamente al crear el widget
+    _initialDataFuture = _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    final dataProvider = context.read<DataProvider>();
+    await dataProvider.refreshAllData();
   }
 
   // Vistas para las pestañas principales
@@ -47,6 +308,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _initialDataFuture,
+      builder: (context, snapshot) {
+        // Mientras carga, mostrar pantalla de carga completa
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const InitialLoadingScreen();
+        }
+
+        // Si hay error, mostrar pantalla de error
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade700,
+            body: Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red.shade700, size: 48),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Error al cargar',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        setState(() {
+                          _initialDataFuture = _loadInitialData();
+                        });
+                      },
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Datos cargados, mostrar pantalla principal
+        return _buildMainScreen();
+      },
+    );
+  }
+
+  Widget _buildMainScreen() {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -110,9 +425,73 @@ class _HomeTabState extends State<HomeTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-              if (provider.isUnauthorized) return const Center(child: Text('No autorizado', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)));
-              if (provider.user == null) return const Center(child: Text('Error al cargar usuario'));
+              // Solo mostrar skeleton mientras hace refresh (no al inicio)
+              if (provider.isLoading && !provider.isInitialLoading) {
+                return const HomeTabSkeleton();
+              }
+              
+              // Error de autorización después de carga completa
+              if (provider.isUnauthorized) {
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No autorizado',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () async {
+                            await provider.refreshAllData();
+                          },
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              // Usuario null después de carga completa
+              if (provider.user == null) {
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No autorizado',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               
               final amount = provider.outstandingAmount;
               final status = amount <= 0 ? 'Pagado' : 'Pendiente';
@@ -127,16 +506,26 @@ class _HomeTabState extends State<HomeTab> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Estatus:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
                         Text(
                           status,
                           style: TextStyle(
                             fontSize: 28,
                             color: statusColor,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 24),
                         Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        Text('\$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text(
+                          '\$${amount.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
                         const SizedBox(height: 32),
                         ElevatedButton.icon(
                           onPressed: status == 'Pendiente' ? () {
@@ -309,18 +698,41 @@ class _PaymentsTabState extends State<PaymentsTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              if (isLoading) {
-                return const Center(child: CircularProgressIndicator());
+              // Solo mostrar skeleton mientras hace refresh (no al inicio)
+              if (isLoading && !provider.isInitialLoading) {
+                return const PaymentsTabSkeleton();
               }
-
+              
+              // Error de autorización después de carga completa
               if (isUnauthorized) {
-                return const Center(
-                  child: Text(
-                    'No autorizado',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No autorizado',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () async {
+                            await _refreshData();
+                          },
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -329,15 +741,19 @@ class _PaymentsTabState extends State<PaymentsTab> {
               // Estado vacío
               if (payments.isEmpty) {
                 return Center(
-                  child: Padding(
+                  child: Container(
                     padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.credit_card_off,
+                          Icons.receipt_long,
                           size: 60,
-                          color: Colors.grey.shade300,
+                          color: Colors.grey.shade400,
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -351,7 +767,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'No se encontraron pagos para este cliente',
+                          'Tu historial de pagos aparecerá aquí',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
