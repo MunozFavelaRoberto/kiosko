@@ -95,7 +95,7 @@ class InitialLoadingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Cargando información...',
+              'No autorizado',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 16,
@@ -598,14 +598,31 @@ class _PaymentsTabState extends State<PaymentsTab> {
         extension = 'pdf';
       }
 
-      // Decodificar base64 y guardar archivo
       final bytes = base64Decode(base64String);
       
       // Obtener nombre de la app dinámicamente
       final packageInfo = await PackageInfo.fromPlatform();
       final appName = packageInfo.appName;
       
-      final directory = await getApplicationDocumentsDirectory();
+      // Usar getExternalStorageDirectory para que sea visible desde el Administrador de Archivos
+      // Esto guarda en: Almacenamiento Interno > Android > data > com.tu.paquete > files
+      Directory? externalDir;
+      
+      // Intentar obtener el directorio de almacenamiento externo
+      try {
+        externalDir = await getExternalStorageDirectory();
+      } catch (e) {
+        // Si falla, usar el directorio de documentos como fallback
+        externalDir = await getApplicationDocumentsDirectory();
+      }
+      
+      if (externalDir == null) {
+        throw Exception('No se pudo acceder al almacenamiento');
+      }
+      
+      // Crear la ruta completa: /storage/emulated/0/Android/data/com.tu.paquete/files/
+      // O usar el directorio externo directamente que ya apunta a la ubicación correcta
+      final directory = externalDir;
       
       // Generar nombre único para evitar sobrescribir
       String finalFilePath = '${directory.path}/$uiid.$extension';
