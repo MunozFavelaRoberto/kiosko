@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// Pantalla Session ID de OpenPay
-/// Se muestra como un diálogo simple mientras carga
+// Pantalla Session ID de OpenPay
+// Se muestra como un diálogo simple mientras carga
 class OpenPayDeviceSessionScreen extends StatefulWidget {
-  static const routeName = '/openpay-device-session';
-
   const OpenPayDeviceSessionScreen({super.key});
 
   @override
@@ -274,11 +272,9 @@ class _OpenPayDeviceSessionScreenState extends State<OpenPayDeviceSessionScreen>
   }
 }
 
-/// Pantalla para crear token de OpenPay usando WebView
-/// Se usa cuando se agrega una tarjeta nueva
+// Pantalla para crear token de OpenPay usando WebView
+// Se usa cuando se agrega una tarjeta nueva
 class OpenPayWebViewScreen extends StatefulWidget {
-  static const routeName = '/openpay-webview';
-
   final String cardNumber;
   final String holderName;
   final String expirationMonth;

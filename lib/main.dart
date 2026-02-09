@@ -16,6 +16,7 @@ import 'package:kiosko/screens/payment_screen.dart';
 import 'package:kiosko/screens/openpay_webview_screen.dart';
 import 'package:kiosko/screens/payment_success_screen.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/utils/app_routes.dart';
 
 Future<void> main() async {
   // Necesario para que SharedPreferences funcione antes del runApp
@@ -67,23 +68,23 @@ class KioskoApp extends StatelessWidget {
       },
       home: const CheckAuthScreen(),
       routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        CardsScreen.routeName: (context) => const CardsScreen(),
-        AddCardScreen.routeName: (context) => const AddCardScreen(),
-        BillingScreen.routeName: (context) => const BillingScreen(),
-        EditBillingScreen.routeName: (context) => const EditBillingScreen(),
-        PaymentScreen.routeName: (context) => const PaymentScreen(),
-        OpenPayDeviceSessionScreen.routeName: (context) => const OpenPayDeviceSessionScreen(),
-        OpenPayWebViewScreen.routeName: (context) => const OpenPayWebViewScreen(
+        AppRoutes.login: (context) => const LoginScreen(),
+        AppRoutes.home: (context) => const HomeScreen(),
+        AppRoutes.profile: (context) => const ProfileScreen(),
+        AppRoutes.cards: (context) => const CardsScreen(),
+        AppRoutes.addCard: (context) => const AddCardScreen(),
+        AppRoutes.billing: (context) => const BillingScreen(),
+        AppRoutes.editBilling: (context) => const EditBillingScreen(),
+        AppRoutes.payment: (context) => const PaymentScreen(),
+        AppRoutes.openpayDeviceSession: (context) => const OpenPayDeviceSessionScreen(),
+        AppRoutes.openpayWebview: (context) => const OpenPayWebViewScreen(
           cardNumber: '',
           holderName: '',
           expirationMonth: '',
           expirationYear: '',
           cvv2: '',
         ),
-        PaymentSuccessScreen.routeName: (context) => const PaymentSuccessScreen(),
+        AppRoutes.paymentSuccess: (context) => const PaymentSuccessScreen(),
       },
     );
   }
@@ -217,10 +218,10 @@ class _CheckAuthScreenState extends State<CheckAuthScreen> {
           MaterialPageRoute(builder: (context) => const BiometricLockScreen(forceToHome: true)),
         );
       } else {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } else {
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
   }
 

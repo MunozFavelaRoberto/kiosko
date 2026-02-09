@@ -9,8 +9,6 @@ import 'package:kiosko/models/biometric_type_info.dart';
 import 'package:kiosko/models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
-  static const routeName = '/profile';
-
   const ProfileScreen({super.key});
 
   @override

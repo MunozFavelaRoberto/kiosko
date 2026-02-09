@@ -14,8 +14,6 @@ enum CardsSelectionMode {
 }
 
 class CardsScreen extends StatefulWidget {
-  static const routeName = '/cards';
-
   final CardsSelectionMode selectionMode;
   final CardModel? selectedCard;
   final Function(CardModel)? onSelect;

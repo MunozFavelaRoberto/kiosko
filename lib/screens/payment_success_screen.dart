@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:kiosko/services/data_provider.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
-  static const routeName = '/payment-success';
-
   const PaymentSuccessScreen({super.key});
 
   @override

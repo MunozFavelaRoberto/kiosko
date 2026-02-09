@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
+import 'package:kiosko/utils/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     
     // Navegamos al Home y eliminamos la pantalla de login del historial
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   // Login por botón

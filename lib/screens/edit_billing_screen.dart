@@ -5,8 +5,6 @@ import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/utils/error_helper.dart';
 
 class EditBillingScreen extends StatefulWidget {
-  static const routeName = '/edit-billing';
-
   const EditBillingScreen({super.key});
 
   @override

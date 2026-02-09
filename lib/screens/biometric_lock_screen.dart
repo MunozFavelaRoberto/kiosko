@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
+import 'package:kiosko/utils/app_routes.dart';
 
 class BiometricLockScreen extends StatefulWidget {
   final bool longPause;
@@ -77,7 +78,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
 
   void _onAuthSuccess() {
     if (widget.forceToHome) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
       Navigator.pop(context);
     }
@@ -86,7 +87,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   Future<void> _forceLogoutAndShowLogin() async {
     await _authService.logout();
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
   }
 
   @override

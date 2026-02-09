@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
-import 'package:kiosko/screens/payment_screen.dart';
+import 'package:kiosko/utils/app_routes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -138,15 +138,17 @@ class _HomeTabState extends State<HomeTab> {
                         Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                         Text('\$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 32),
-                        ElevatedButton(
+                        ElevatedButton.icon(
                           onPressed: status == 'Pendiente' ? () {
-                            Navigator.pushNamed(context, PaymentScreen.routeName);
+                            Navigator.pushNamed(context, AppRoutes.payment);
                           } : null,
+                          icon: Icon(status == 'Pendiente' ? Icons.lock_open : Icons.lock),
+                          iconAlignment: IconAlignment.end,
+                          label: const Text('Pagar', style: TextStyle(fontSize: 24)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
                           ),
-                          child: const Text('Pagar', style: TextStyle(fontSize: 24)),
                         ),
                       ],
                     ),

@@ -8,8 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AddCardScreen extends StatefulWidget {
-  static const routeName = '/add-card';
-
   const AddCardScreen({super.key});
 
   @override

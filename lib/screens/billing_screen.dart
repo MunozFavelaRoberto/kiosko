@@ -6,8 +6,6 @@ import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/services/api_service.dart';
 
 class BillingScreen extends StatefulWidget {
-  static const routeName = '/billing';
-
   const BillingScreen({super.key});
 
   @override

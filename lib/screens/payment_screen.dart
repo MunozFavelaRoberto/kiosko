@@ -9,13 +9,11 @@ import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/screens/cards_screen.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
 import 'package:kiosko/screens/openpay_webview_screen.dart';
-import 'package:kiosko/screens/payment_success_screen.dart';
 import 'package:kiosko/utils/error_helper.dart';
+import 'package:kiosko/utils/app_routes.dart';
 import 'package:provider/provider.dart';
 
 class PaymentScreen extends StatefulWidget {
-  static const routeName = '/payment';
-
   const PaymentScreen({super.key});
 
   @override
@@ -392,7 +390,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!mounted) return;
 
       // Navegar a la pantalla de éxito
-      Navigator.pushReplacementNamed(context, PaymentSuccessScreen.routeName);
+      Navigator.pushReplacementNamed(context, AppRoutes.paymentSuccess);
     } catch (e) {
       debugPrint('PaymentScreen: Error en pago: $e');
       if (!mounted) return;
