@@ -13,7 +13,7 @@ class ClientNumberHeader extends StatelessWidget {
         if (provider.isUnauthorized) {
           displayText = 'No autorizado';
         } else {
-          displayText = provider.user?.clientNumber ?? 'Cargando...';
+          displayText = provider.user?.clientNumber ?? 'No autorizado';
         }
         return Container(
           width: double.infinity,

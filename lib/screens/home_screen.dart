@@ -9,74 +9,6 @@ import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/utils/app_routes.dart';
 
-// Widget de Skeleton Loader para efecto de carga profesional
-class SkeletonLoader extends StatefulWidget {
-  final Widget child;
-  final bool enabled;
-  
-  const SkeletonLoader({
-    super.key,
-    required this.child,
-    this.enabled = true,
-  });
-  
-  @override
-  State<SkeletonLoader> createState() => _SkeletonLoaderState();
-}
-
-class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutSine,
-    );
-  }
-  
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return widget.child;
-    }
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: const [0.0, 0.5, 1.0],
-              colors: [
-                Colors.grey.shade300,
-                Colors.grey.shade200,
-                Colors.grey.shade300,
-              ],
-            ).createShader(bounds);
-          },
-          child: child,
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-// Pantalla de carga completa (Splash Screen profesional)
 class InitialLoadingScreen extends StatelessWidget {
   const InitialLoadingScreen({super.key});
 
@@ -95,7 +27,7 @@ class InitialLoadingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No autorizado',
+              'Cargando información...',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 16,
@@ -104,168 +36,6 @@ class InitialLoadingScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// Placeholder para el HomeTab
-class HomeTabSkeleton extends StatelessWidget {
-  const HomeTabSkeleton({super.key});
-  
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return SkeletonLoader(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Estatus skeleton
-                Container(
-                  width: 120,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Monto skeleton
-                Container(
-                  width: 200,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // Botón skeleton
-                Container(
-                  width: 180,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Placeholder para PaymentsTab
-class PaymentsTabSkeleton extends StatelessWidget {
-  const PaymentsTabSkeleton({super.key});
-  
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        int crossAxisCount = 1;
-        if (constraints.maxWidth >= 600) crossAxisCount = 2;
-        if (constraints.maxWidth >= 900) crossAxisCount = 3;
-        if (constraints.maxWidth >= 1200) crossAxisCount = 4;
-        
-        return SkeletonLoader(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              childAspectRatio: 1.10,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: 4,
-            itemBuilder: (context, index) {
-              return Card(
-                elevation: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Folio skeleton
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          Container(
-                            width: 60,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(height: 16),
-                      // Descripción skeleton
-                      Container(
-                        width: double.infinity,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: 100,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Fecha skeleton
-                      Container(
-                        width: 80,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Monto skeleton
-                      Container(
-                        width: 100,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
     );
   }
 }
@@ -425,12 +195,7 @@ class _HomeTabState extends State<HomeTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Solo mostrar skeleton mientras hace refresh (no al inicio)
-              if (provider.isLoading && !provider.isInitialLoading) {
-                return const HomeTabSkeleton();
-              }
-              
-              // Error de autorización después de carga completa
+              // Error de autorización
               if (provider.isUnauthorized) {
                 return Center(
                   child: Container(
@@ -598,6 +363,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
         extension = 'pdf';
       }
 
+      // Decodificar base64 y guardar archivo
       final bytes = base64Decode(base64String);
       
       // Obtener nombre de la app dinámicamente
@@ -703,7 +469,6 @@ class _PaymentsTabState extends State<PaymentsTab> {
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
     final payments = provider.paymentHistory;
-    final isLoading = provider.isLoading;
     final isUnauthorized = provider.isUnauthorized;
     final theme = Theme.of(context);
 
@@ -715,11 +480,6 @@ class _PaymentsTabState extends State<PaymentsTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Solo mostrar skeleton mientras hace refresh (no al inicio)
-              if (isLoading && !provider.isInitialLoading) {
-                return const PaymentsTabSkeleton();
-              }
-              
               // Error de autorización después de carga completa
               if (isUnauthorized) {
                 return Center(
