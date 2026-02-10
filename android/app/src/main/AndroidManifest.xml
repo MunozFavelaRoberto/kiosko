@@ -3,6 +3,9 @@
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 <!-- Permiso carpeta pública Downloads -->
+<!-- NOTA: Este permiso es necesario para que los usuarios puedan acceder a sus facturas y tickets 
+     desde la app Archivos del dispositivo. Las facturas son documentos fiscales que los usuarios necesitan guardar para su contabilidad y declaracion. 
+     El acceso es limitado únicamente a la carpeta Downloads donde la app guarda los documentos. -->
 <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <application
         android:label="kiosko"
