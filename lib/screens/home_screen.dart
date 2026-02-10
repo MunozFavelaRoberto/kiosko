@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:external_path/external_path.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
@@ -363,98 +363,97 @@ class _PaymentsTabState extends State<PaymentsTab> {
         extension = 'pdf';
       }
 
-      // Decodificar base64 y guardar archivo
+      // Decodificar base64
       final bytes = base64Decode(base64String);
       
-      // Obtener nombre de la app dinámicamente
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appName = packageInfo.appName;
+      // Generar nombre del archivo
+      final fileName = '$uiid.$extension';
       
-      // Usar getExternalStorageDirectory para que sea visible desde el Administrador de Archivos
-      // Esto guarda en: Almacenamiento Interno > Android > data > com.tu.paquete > files
-      Directory? externalDir;
+      String finalFilePath;
+      String message;
       
-      // Intentar obtener el directorio de almacenamiento externo
-      try {
-        externalDir = await getExternalStorageDirectory();
-      } catch (e) {
-        // Si falla, usar el directorio de documentos como fallback
-        externalDir = await getApplicationDocumentsDirectory();
-      }
-      
-      if (externalDir == null) {
-        throw Exception('No se pudo acceder al almacenamiento');
-      }
-      
-      // Crear la ruta completa: /storage/emulated/0/Android/data/com.tu.paquete/files/
-      // O usar el directorio externo directamente que ya apunta a la ubicación correcta
-      final directory = externalDir;
-      
-      // Generar nombre único para evitar sobrescribir
-      String finalFilePath = '${directory.path}/$uiid.$extension';
-      int counter = 1;
-      while (await File(finalFilePath).exists()) {
-        finalFilePath = '${directory.path}/$uiid ($counter).$extension';
-        counter++;
-      }
-      
-      final file = File(finalFilePath);
-      await file.writeAsBytes(bytes);
-
-      // Mostrar ubicación del archivo
-      if (mounted) {
-        final snackBar = SnackBar(
-          content: Text('${fileType.toUpperCase()} descargado'),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'Ver ubicación',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('${fileType.toUpperCase()} descargado'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Archivo guardado en:'),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        finalFilePath,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Para ver el archivo:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Text('1. Abre la app Archivos'),
-                      Text('2. Busca los archivos $appName en la lista'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cerrar'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+      if (Platform.isIOS) {
+        // iOS: Guardar en Documents usando path_provider
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final iosDir = Directory('${documentsDir.path}/Documents');
+        
+        // Crear directorio Documents si no existe
+        if (!await iosDir.exists()) {
+          await iosDir.create(recursive: true);
+        }
+        
+        // Generar nombre único
+        finalFilePath = '${iosDir.path}/$fileName';
+        int counter = 1;
+        while (await File(finalFilePath).exists()) {
+          finalFilePath = '${iosDir.path}/$uiid ($counter).$extension';
+          counter++;
+        }
+        
+        message = '${fileType.toUpperCase()} guardado en Archivos';
+      } else {
+        // Android: Guardar en Downloads usando external_path
+        String downloadsPath = await ExternalPath.getExternalStoragePublicDirectory(
+          ExternalPath.DIRECTORY_DOWNLOAD,
         );
         
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        finalFilePath = '$downloadsPath/$fileName';
+        int counter = 1;
+        while (await File(finalFilePath).exists()) {
+          finalFilePath = '$downloadsPath/$uiid ($counter).$extension';
+          counter++;
+        }
         
-        // Cerrar automáticamente después de 3 segundos
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          }
-        });
+        message = '${fileType.toUpperCase()} guardado en Downloads';
+      }
+      
+      // Guardar el archivo
+      final file = File(finalFilePath);
+      await file.writeAsBytes(bytes);
+      
+      // Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Ver',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Archivo guardado'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Ubicación: $finalFilePath'),
+                        const SizedBox(height: 8),
+                        if (Platform.isIOS) ...[
+                          const Text('Para ver el archivo:'),
+                          const Text('1. Abre la app Archivos'),
+                          const Text('2. Ve a Mi iPhone > Documentos'),
+                          Text('3. Busca el archivo $fileName'),
+                        ] else ...[
+                          const Text('Para ver el archivo:'),
+                          const Text('1. Abre la app Archivos'),
+                          const Text('2. Ve a Almacenamiento > Download'),
+                        ],
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cerrar'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
