@@ -4,13 +4,16 @@ import 'package:http/http.dart' as http;
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 import 'package:kiosko/models/auth_response.dart';
 import 'package:kiosko/services/api_service.dart';
 
+/// Servicio de autenticación que gestiona login, logout, biometría y persistencia de sesión
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
   final ApiService _apiService = ApiService();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   UserData? _currentUser;
 
   UserData? get currentUser => _currentUser;
@@ -29,11 +32,8 @@ class AuthService {
 
   Future<bool> authenticate() async {
     try {
-      // En versiones nuevas, AuthenticationOptions y los mensajes
-      // van dentro de authMessages o directamente en los parámetros de la plataforma.
       return await _auth.authenticate(
         localizedReason: 'Por favor, autentícate para acceder a Kiosko',
-        // Se eliminó el parámetro 'options' de nivel superior y se usan estos:
         authMessages: const [
           AndroidAuthMessages(
             signInTitle: 'Inicio de Sesión - Kiosko',
@@ -41,7 +41,6 @@ class AuthService {
             cancelButton: 'Cerrar',
           ),
         ],
-        // Opciones de comportamiento:
         persistAcrossBackgrounding: true,
         biometricOnly: false,
       );
@@ -51,8 +50,7 @@ class AuthService {
     }
   }
 
-  // --- PREFERENCIA DE BIOMETRÍA (LEGACY) ---
-
+  // Biometry Preferences (Legacy - Mantenido por compatibilidad)
   Future<void> setUseBiometrics(bool value) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,13 +70,11 @@ class AuthService {
     }
   }
 
-  // --- BIOMETRÍAS DISPONIBLES (NUEVO SISTEMA) ---
 
   /// Obtiene la lista de tipos de biometría disponibles en el dispositivo
   Future<List<BiometricTypeInfo>> getAvailableBiometrics() async {
     try {
       final List<BiometricType> availableTypes = await _auth.getAvailableBiometrics();
-      
       return availableTypes.map((type) => BiometricTypeInfo.fromType(type)).toList();
     } catch (e) {
       debugPrint('Error obteniendo biometrías disponibles: $e');
@@ -140,12 +136,9 @@ class AuthService {
   Future<bool> isAnyBiometricEnabled() async {
     try {
       final biometrics = await getAvailableBiometrics();
-      
-      // Normalizar: evitar verificar el mismo tipo dos veces
-      final checkedTypes = <String>{}; // track por displayName
+      final checkedTypes = <String>{};
       
       for (final biometric in biometrics) {
-        // Usar displayName como clave para evitar duplicados de huella
         final key = biometric.displayName;
         if (checkedTypes.contains(key)) continue;
         checkedTypes.add(key);
@@ -161,17 +154,87 @@ class AuthService {
     }
   }
 
-  // --- PERSISTENCIA ---
+  // Session Persistence
 
   Future<void> saveLoginState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
   }
 
+  // Secure Credentials (Biometric Re-authentication)
+
+  /// Guarda las credenciales de forma encriptada para uso con biometría
+  Future<void> saveCredentials(String email, String password) async {
+    try {
+      await _secureStorage.write(key: 'biometric_email', value: email);
+      await _secureStorage.write(key: 'biometric_password', value: password);
+    } catch (e) {
+      debugPrint('Error guardando credenciales: $e');
+    }
+  }
+
+  /// Recupera el email guardado de forma encriptada
+  Future<String?> getSavedEmail() async {
+    try {
+      return await _secureStorage.read(key: 'biometric_email');
+    } catch (e) {
+      debugPrint('Error recuperando email: $e');
+      return null;
+    }
+  }
+
+  /// Recupera la contraseña guardada de forma encriptada
+  Future<String?> getSavedPassword() async {
+    try {
+      return await _secureStorage.read(key: 'biometric_password');
+    } catch (e) {
+      debugPrint('Error recuperando contraseña: $e');
+      return null;
+    }
+  }
+
+  /// Verifica si hay credenciales guardadas
+  Future<bool> hasSavedCredentials() async {
+    final email = await getSavedEmail();
+    final password = await getSavedPassword();
+    return email != null && password != null;
+  }
+
+  /// Elimina las credenciales guardadas
+  Future<void> clearCredentials() async {
+    try {
+      await _secureStorage.delete(key: 'biometric_email');
+      await _secureStorage.delete(key: 'biometric_password');
+    } catch (e) {
+      debugPrint('Error eliminando credenciales: $e');
+    }
+  }
+
+  /// Login automático usando credenciales guardadas (para biometría)
+  Future<bool> loginWithSavedCredentials() async {
+    try {
+      final email = await getSavedEmail();
+      final password = await getSavedPassword();
+      
+      if (email == null || password == null) {
+        return false;
+      }
+      
+      final response = await login(email, password);
+      return response != null;
+    } catch (e) {
+      debugPrint('Error login con credenciales guardadas: $e');
+      return false;
+    }
+  }
+
+  // Authentication Methods
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
     await prefs.remove('authToken');
+    await clearCredentials();
     _currentUser = null;
   }
 
@@ -195,40 +258,31 @@ class AuthService {
       final token = await getToken();
       if (token == null) return false;
 
-      // Intentar llamar a un endpoint que requiera auth
       final response = await _apiService.get('/user', headers: {
         'Authorization': 'Bearer $token',
       });
 
-      // Si la respuesta es exitosa, el token es válido
       return response != null;
     } catch (e) {
       debugPrint('Error verificando token: $e');
-      // Si es error de red, asumir token válido para mejor UX (evitar logout por conectividad)
       if (e is SocketException || e is http.ClientException) {
-        debugPrint('Error de red, asumiendo token válido');
         return true;
       }
-      // Para otros errores (como 401), token inválido
       return false;
     }
   }
 
   Future<AuthResponse?> login(String email, String password) async {
     try {
-      debugPrint('Intentando login con email: $email');
       final response = await _apiService.post('/login', body: {
         'email': email,
         'password': password,
       });
-      debugPrint('Respuesta del login: $response');
 
       if (response != null) {
         final authResponse = AuthResponse.fromJson(response);
-        // Guardar token, datos del usuario y estado de login
         await _saveToken(authResponse.data.auth.token);
         _currentUser = authResponse.data.auth.user;
-        debugPrint('Usuario guardado: ${_currentUser?.fullName} - ${_currentUser?.email}');
         await saveLoginState();
         return authResponse;
       }

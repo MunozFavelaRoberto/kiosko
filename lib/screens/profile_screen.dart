@@ -21,24 +21,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _loading = true;
   List<BiometricTypeInfo> _availableBiometrics = [];
   Map<String, bool> _biometricStates = {};
+  bool _initialLoadComplete = false;
 
   @override
   void initState() {
     super.initState();
     _authService = Provider.of<AuthService>(context, listen: false);
     _apiService = ApiService();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dataProvider = Provider.of<DataProvider>(context, listen: false);
-      if (dataProvider.user == null) {
-        dataProvider.fetchUser();
-      }
-    });
+    // Cargar biometrías siempre, sin depender del usuario
     _loadBiometrics();
   }
 
   Future<void> _loadBiometrics() async {
-    setState(() => _loading = true);
-
     try {
       final biometrics = await _authService.getAvailableBiometrics();
 
@@ -73,6 +67,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _refreshData() async {
+    // Resetear flag para permitir recargar el usuario
+    if (mounted) {
+      setState(() => _initialLoadComplete = false);
+    }
     final dataProvider = context.read<DataProvider>();
     await dataProvider.fetchUser();
     await _loadBiometrics();
@@ -291,9 +289,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Expanded(
               child: Consumer<DataProvider>(
                 builder: (context, provider, child) {
-                  if (provider.isLoading || provider.user == null) {
+                  // Si no está autorizado, mostrar "No autorizado"
+                  if (provider.isUnauthorized) {
+                    // Marcar que ya intentamos cargar
+                    if (!_initialLoadComplete) {
+                      _initialLoadComplete = true;
+                    }
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No autorizado',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Si el usuario es null, intentar cargarlo UNA SOLA VEZ
+                  if (provider.user == null && !provider.isLoading) {
+                    if (!_initialLoadComplete) {
+                      _initialLoadComplete = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        provider.fetchUser();
+                      });
+                      return const Center(child: CircularProgressIndicator());
+                    } else {
+                      // Ya intentamos cargar y sigue siendo null, mostrar "No autorizado"
+                      return Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'No autorizado',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  }
+
+                  // Mostrar indicador solo mientras está cargando
+                  if (provider.isLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   final user = provider.user!;
 
                   return ListView(

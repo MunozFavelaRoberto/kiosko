@@ -62,7 +62,7 @@ class AppDrawer extends StatelessWidget {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text("Cerrar Sesión"),
+                          title: const Text("Cerrar sesión"),
                           content: const Text("¿Estás seguro de que deseas salir?"),
                           actions: [
                             TextButton(

@@ -51,6 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isNotEmpty && pass.isNotEmpty) {
       final response = await _authService.login(email, pass);
       if (response != null) {
+        // Guardar credenciales de forma segura para reactivación con biometría
+        await _authService.saveCredentials(email, pass);
         await _handleLoginSuccess();
       } else {
         if (!mounted) return;
@@ -72,12 +74,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loginWithBiometrics(BiometricTypeInfo biometric) async {
     setState(() => _isLoading = true);
 
-    // Primero verificar si hay un token guardado y es válido
-    final tokenValid = await _authService.verifyToken();
-    if (!tokenValid) {
+    // Verificar que la biometría sigue habilitada
+    final isEnabled = await _authService.isBiometricEnabled(biometric.type);
+
+    if (!isEnabled) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay sesión activa. Inicia sesión con email y contraseña.')),
+        const SnackBar(content: Text('Esta biometría ha sido deshabilitada')),
       );
       if (mounted) {
         setState(() => _isLoading = false);
@@ -85,25 +88,34 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Verificar que la biometría sigue habilitada
-    final isEnabled = await _authService.isBiometricEnabled(biometric.type);
-
-    if (isEnabled) {
-      bool authenticated = await _authService.authenticateWithType(biometric.type);
-      if (authenticated) {
-        // Restaurar el estado de login ya que el token es válido
+    // Autenticar con biometría
+    bool authenticated = await _authService.authenticateWithType(biometric.type);
+    
+    if (authenticated) {
+      // Verificar si hay token válido
+      final tokenValid = await _authService.verifyToken();
+      
+      if (tokenValid) {
+        // Token válido, solo restaurar estado
         await _authService.saveLoginState();
         await _handleLoginSuccess();
       } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Autenticación con ${biometric.displayName} fallida')),
-        );
+        // Token expiró, usar credenciales guardadas para hacer login
+        final loginSuccess = await _authService.loginWithSavedCredentials();
+        
+        if (loginSuccess) {
+          await _handleLoginSuccess();
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sesión expirada. Por favor inicia sesión con email y contraseña.')),
+          );
+        }
       }
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esta biometría ha sido deshabilitada')),
+        SnackBar(content: Text('Autenticación con ${biometric.displayName} fallida')),
       );
     }
 
@@ -113,29 +125,38 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _initBiometricVisibility() async {
+    // Verificar si hay credenciales guardadas (para reactivación de sesión)
+    final hasCredentials = await _authService.hasSavedCredentials();
+    
+    // Verificar si hay biometría disponible
     final canCheck = await _authService.canCheckBiometrics;
-    final tokenValid = await _authService.verifyToken();
-
+    
     List<BiometricTypeInfo> enabledBiometrics = [];
-    if (canCheck && tokenValid) {
+    
+    // Mostrar biometría si:
+    // 1. Hay credenciales guardadas (para reactivación de sesión), O
+    // 2. Hay token válido (sesión activa previamente)
+    final tokenValid = await _authService.verifyToken();
+    
+    if ((hasCredentials || tokenValid) && canCheck) {
       final available = await _authService.getAvailableBiometrics();
-
+      
       // Normalizar: eliminar duplicados de strong/weak
       final addedTypes = <String>{}; // track por displayName
-
+      
       for (final biometric in available) {
         // Verificar si está habilitada
         final isEnabled = await _authService.isBiometricEnabled(biometric.type);
         if (!isEnabled) continue;
-
+        
         // Evitar duplicados
         if (addedTypes.contains(biometric.displayName)) continue;
-
+        
         enabledBiometrics.add(biometric);
         addedTypes.add(biometric.displayName);
       }
     }
-
+    
     if (!mounted) return;
     setState(() {
       _showBiometricButton = enabledBiometrics.isNotEmpty;

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:kiosko/services/theme_provider.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/services/api_service.dart';
+import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/screens/login_screen.dart';
 import 'package:kiosko/screens/billing_screen.dart';
 import 'package:kiosko/screens/edit_billing_screen.dart';
@@ -15,7 +16,6 @@ import 'package:kiosko/screens/biometric_lock_screen.dart';
 import 'package:kiosko/screens/payment_screen.dart';
 import 'package:kiosko/screens/openpay_webview_screen.dart';
 import 'package:kiosko/screens/payment_success_screen.dart';
-import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/utils/app_routes.dart';
 
 Future<void> main() async {
@@ -103,7 +103,7 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   bool _wasPaused = false;
   DateTime? _pausedAt;
   bool _screenWasLocked = false;
-  bool _isLockScreenActive = false; // Flag para evitar múltiples pantallas de bloqueo
+  bool _isLockScreenActive = false;
   static const Duration _maxIdleForQuickUnlock = Duration(minutes: 5);
 
   @override
@@ -111,16 +111,11 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
     super.initState();
     _authService = Provider.of<AuthService>(context, listen: false);
     WidgetsBinding.instance.addObserver(this);
-    // Listen for native screen on/off events
     _screenChannel.setMethodCallHandler((call) async {
       if (call.method == 'screenEvent') {
         final String event = call.arguments as String? ?? '';
         if (event == 'off') {
-          // Mark that the screen was locked while app was active
-          // so on resume we force the biometric lock even if short.
           _pausedAt = DateTime.now();
-          // set a flag to indicate screen lock happened
-          // we represent it by setting _wasPaused = true and _pausedAt now
           _wasPaused = true;
           _screenWasLocked = true;
         }
@@ -137,23 +132,18 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // La app fue enviada a background (posible bloqueo)
       _wasPaused = true;
       _pausedAt = DateTime.now();
     }
 
     if (state == AppLifecycleState.resumed) {
-      // Volvió al frente; si antes se pausó, activamos bloqueo inteligente
       if (_wasPaused) {
         final now = DateTime.now();
         final diff = _pausedAt == null ? Duration.zero : now.difference(_pausedAt!);
         final longPause = diff > _maxIdleForQuickUnlock;
-        // Forzar bloqueo si hubo una inactividad larga O si detectamos
-        // que el teléfono fue apagado / bloqueado nativamente.
         if (longPause || _screenWasLocked) {
           _tryLockIfNeeded(true);
         }
-        // reset screen-locked marker after handling
         _screenWasLocked = false;
       }
       _wasPaused = false;
@@ -161,32 +151,52 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   }
 
   Future<void> _tryLockIfNeeded(bool longPause) async {
-    // Si ya hay una pantalla de bloqueo activa, no mostrar otra
     if (_isLockScreenActive) return;
     
     final use = await _authService.isAnyBiometricEnabled();
     if (!use) return;
 
-    // Marcar que la pantalla de bloqueo está activa
     _isLockScreenActive = true;
     
     if (!mounted) return;
 
-    // Empujar la pantalla de bloqueo biométrica
     await appNavigatorKey.currentState?.push(MaterialPageRoute(
       builder: (context) => BiometricLockScreen(longPause: longPause, forceToHome: false),
       fullscreenDialog: true,
     ));
     
-    // Cuando la pantalla de bloqueo se cierra, resetear el flag
     if (!mounted) return;
     _isLockScreenActive = false;
   }
+
   @override
   Widget build(BuildContext context) {
-    // Ahora delegamos el bloqueo en `BiometricLockScreen` para mantener
-    // comportamiento consistente entre cold start y resume.
+    // Verificar estado de autorización
+    final dataProvider = context.watch<DataProvider>();
+    
+    // Si no está autorizado, mostrar pantalla completa de "No Autorizado"
+    if (dataProvider.isUnauthorized) {
+      return _buildUnauthorizedScreen(context, dataProvider);
+    }
+    
     return widget.child;
+  }
+
+  Widget _buildUnauthorizedScreen(BuildContext context, DataProvider dataProvider) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      body: Center(
+        child: Text(
+          'NO AUTORIZADO',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.red.shade700,
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/screens/add_card_screen.dart';
 import 'package:kiosko/models/card.dart';
 import 'package:kiosko/services/api_service.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/utils/error_helper.dart';
-import 'package:provider/provider.dart';
 
 enum CardsSelectionMode {
   view,
@@ -39,7 +40,15 @@ class _CardsScreenState extends State<CardsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _authService = context.read<AuthService>();
-    _loadCards();
+    // Solo cargar tarjetas si hay un usuario autenticado
+    final dataProvider = context.read<DataProvider>();
+    if (dataProvider.user != null) {
+      _loadCards();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadCards() async {
@@ -329,73 +338,112 @@ class _CardsScreenState extends State<CardsScreen> {
           children: [
             const ClientNumberHeader(),
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _cards.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.credit_card_off,
-                                  size: 60,
-                                  color: Colors.grey.shade300,
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'No hay tarjetas registradas',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Agrega una tarjeta para realizar pagos más rápido',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            int crossAxisCount = 1;
-                            double childAspectRatio = 1.8;
-                            
-                            if (constraints.maxWidth >= 600) {
-                              crossAxisCount = 2;
-                              childAspectRatio = 1.7;
-                            }
-                            if (constraints.maxWidth >= 900) {
-                              crossAxisCount = 3;
-                              childAspectRatio = 1.5;
-                            }
-
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                childAspectRatio: childAspectRatio,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: _cards.length,
-                              itemBuilder: (context, index) {
-                                final card = _cards[index];
-                                return _buildCardWidget(card);
-                              },
-                            );
-                          },
+              child: Consumer<DataProvider>(
+                builder: (context, dataProvider, child) {
+                  // Usuario null después de carga completa - mostrar "No autorizado"
+                  if (!dataProvider.isLoading && dataProvider.user == null) {
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No autorizado',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Mostrar indicador de carga
+                  if (_isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  // Sin tarjetas
+                  if (_cards.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.credit_card_off,
+                              size: 60,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No hay tarjetas registradas',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Agrega una tarjeta para realizar pagos más rápido',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Grid de tarjetas
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      int crossAxisCount = 1;
+                      double childAspectRatio = 1.8;
+                      
+                      if (constraints.maxWidth >= 600) {
+                        crossAxisCount = 2;
+                        childAspectRatio = 1.7;
+                      }
+                      if (constraints.maxWidth >= 900) {
+                        crossAxisCount = 3;
+                        childAspectRatio = 1.5;
+                      }
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: _cards.length,
+                        itemBuilder: (context, index) {
+                          final card = _cards[index];
+                          return _buildCardWidget(card);
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

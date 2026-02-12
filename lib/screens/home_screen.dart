@@ -195,41 +195,6 @@ class _HomeTabState extends State<HomeTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Error de autorización
-              if (provider.isUnauthorized) {
-                return Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 48),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No autorizado',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () async {
-                            await provider.refreshAllData();
-                          },
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              
               // Usuario null después de carga completa
               if (provider.user == null) {
                 return Center(
@@ -468,7 +433,6 @@ class _PaymentsTabState extends State<PaymentsTab> {
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
     final payments = provider.paymentHistory;
-    final isUnauthorized = provider.isUnauthorized;
     final theme = Theme.of(context);
 
     return RefreshIndicator(
@@ -479,34 +443,27 @@ class _PaymentsTabState extends State<PaymentsTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Error de autorización después de carga completa
-              if (isUnauthorized) {
+              // Usuario null después de carga completa
+              if (provider.user == null) {
                 return Center(
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700, size: 48),
+                        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
                         const SizedBox(height: 16),
                         const Text(
                           'No autorizado',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.red,
+                            color: Colors.orange,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () async {
-                            await _refreshData();
-                          },
-                          child: const Text('Reintentar'),
                         ),
                       ],
                     ),

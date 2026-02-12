@@ -141,6 +141,8 @@ class DataProvider extends ChangeNotifier {
           );
           _isInitialLoading = false;
           debugPrint('Usuario obtenido de perfil: ${_user!.fullName} - Cliente: ${_user!.clientNumber}');
+          // Notificar que el usuario se cargó exitosamente
+          notifyListeners();
         } else {
           _isInitialLoading = false;
           throw Exception('No hay datos de usuario disponibles');
@@ -160,8 +162,12 @@ class DataProvider extends ChangeNotifier {
       }
       // Sin datos disponibles
       _user = null;
+      // IMPORTANTE: Notificar a los widgets que el estado cambió
+      notifyListeners();
     } finally {
       _isLoading = false;
+      // Notificar que la carga terminó
+      notifyListeners();
     }
   }
 
@@ -194,6 +200,12 @@ class DataProvider extends ChangeNotifier {
   // Método para actualizar el usuario
   void updateUser(User newUser) {
     _user = newUser;
+    notifyListeners();
+  }
+
+  // Resetear estado de autorización (para cuando usuario hace logout)
+  void resetUnauthorized() {
+    _isUnauthorized = false;
     notifyListeners();
   }
 

@@ -8,6 +8,8 @@
      for their accounting and tax declaration. Access is limited only to the Downloads 
      folder where the app saves the documents. -->
 <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+<!-- Secure storage for biometric credentials -->
+<uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="kiosko"
         android:name="${applicationName}"
