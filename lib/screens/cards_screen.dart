@@ -342,29 +342,35 @@ class _CardsScreenState extends State<CardsScreen> {
                 builder: (context, dataProvider, child) {
                   // Usuario null después de carga completa - mostrar "No autorizado"
                   if (!dataProvider.isLoading && dataProvider.user == null) {
-                    return Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No autorizado',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No autorizado',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     );
                   }
 
@@ -450,17 +456,25 @@ class _CardsScreenState extends State<CardsScreen> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          onPressed: _addCard,
-          icon: const Icon(Icons.add),
-          label: Text(
-            widget.selectionMode == CardsSelectionMode.select 
-                ? 'Agregar Nueva Tarjeta' 
-                : 'Agregar Tarjeta',
-          ),
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-          ),
+        child: Consumer<DataProvider>(
+          builder: (context, dataProvider, child) {
+            final isAuthorized = dataProvider.user != null;
+            return ElevatedButton.icon(
+              onPressed: isAuthorized ? _addCard : null,
+              icon: const Icon(Icons.add),
+              label: Text(
+                widget.selectionMode == CardsSelectionMode.select 
+                    ? 'Agregar Nueva Tarjeta' 
+                    : 'Agregar Tarjeta',
+              ),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: isAuthorized 
+                    ? null 
+                    : Colors.grey.shade300,
+              ),
+            );
+          },
         ),
       ),
     );
