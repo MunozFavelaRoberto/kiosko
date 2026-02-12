@@ -19,7 +19,6 @@ class ApiService {
   String get baseUrl => baseUrlApi;
 
   static http.Client _createHttpClient() {
-    // ✅ Para PRODUCCION: usar cliente HTTP estándar con validación de certificados
     return http.Client();
   }
 
