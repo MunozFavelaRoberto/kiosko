@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 import 'package:kiosko/models/card.dart';
 import 'package:kiosko/models/payment_detail.dart' as payment_detail;
 import 'package:kiosko/models/payment_history.dart' as payment_history;
@@ -20,15 +19,8 @@ class ApiService {
   String get baseUrl => baseUrlApi;
 
   static http.Client _createHttpClient() {
-    // Ignorar errores de certificado SSL
-    // Esto permite probar con certificados autofirmados o inválidos:
-    // ❌ para DESARROLLO:
-    final ioClient = HttpClient();
-    ioClient.badCertificateCallback = (cert, host, port) => true;
-    return IOClient(ioClient);
-
-    // ✅ Para PRODUCCION: descomentar esta línea y eliminar el código de arriba
-    // return http.Client();
+    // ✅ Para PRODUCCION: usar cliente HTTP estándar con validación de certificados
+    return http.Client();
   }
 
   // Método GET
