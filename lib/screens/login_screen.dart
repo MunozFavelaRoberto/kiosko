@@ -191,50 +191,39 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 40),
 
                       // Campo Email
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                      TextField(
+                        controller: _userController,
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         ),
-                        child: TextField(
-                          controller: _userController,
-                          decoration: InputDecoration(
-                            hintText: 'Email',
-                            hintStyle: const TextStyle(color: Colors.black54),
-                            prefixIcon: Icon(Icons.email_outlined, color: Colors.black54),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                        ),
+                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 20),
 
                       // Campo Contraseña
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: TextField(
-                          controller: _passController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            hintText: 'Contraseña',
-                            hintStyle: const TextStyle(color: Colors.black54),
-                            prefixIcon: Icon(Icons.lock_outline, color: Colors.black54),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.black54,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                      TextField(
+                        controller: _passController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          hintText: 'Contraseña',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
                             ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -251,8 +240,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                            ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
-                            : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
+                              : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
