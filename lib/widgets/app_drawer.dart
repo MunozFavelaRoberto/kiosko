@@ -33,7 +33,7 @@ class AppDrawer extends StatelessWidget {
               padding: EdgeInsets.zero,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person_outline, color: Colors.black),
+                  leading: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onSurface),
                   title: const Text("Mi perfil"),
                   onTap: () {
                     Navigator.pop(context);
@@ -41,7 +41,7 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                                 ListTile(
-                  leading: const Icon(Icons.credit_card, color: Colors.black),
+                  leading: Icon(Icons.credit_card, color: Theme.of(context).colorScheme.onSurface),
                   title: const Text("Tarjetas"),
                   onTap: () {
                     Navigator.pop(context);
@@ -49,7 +49,7 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.receipt_long_outlined, color: Colors.black),
+                  leading: Icon(Icons.receipt_long_outlined, color: Theme.of(context).colorScheme.onSurface),
                   title: const Text("Facturación"),
                   onTap: () {
                     Navigator.pop(context);
@@ -58,7 +58,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: Colors.black),
+                  leading: Icon(Icons.logout_rounded, color: Theme.of(context).colorScheme.onSurface),
                   title: const Text(
                     "Cerrar Sesión",
                   ),
