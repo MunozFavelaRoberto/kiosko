@@ -322,45 +322,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
 
                   // Si el usuario es null, intentar cargarlo UNA SOLA VEZ
-                  if (provider.user == null && !provider.isLoading) {
-                    if (!_initialLoadComplete) {
-                      _initialLoadComplete = true;
+                  //Solo mostrar indicador de carga si isLoading es true Y user es null
+                  if (provider.user == null) {
+                    if (provider.isLoading) {
+                      // Está cargando, mostrar indicador
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    // No está cargando pero user es null - intentar cargar
+                    if (!provider.hasAttemptedFetch) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         provider.fetchUser();
                       });
                       return const Center(child: CircularProgressIndicator());
-                    } else {
-                      // Ya intentamos cargar y sigue siendo null, mostrar "No autorizado"
-                      return Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'No autorizado',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
                     }
-                  }
-
-                  // Mostrar indicador solo mientras está cargando
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    
+                    // Ya intentamos cargar y sigue siendo null - podría ser error de red
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cloud_off, color: Colors.grey.shade400, size: 48),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Error de conexión',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'No se pudo cargar los datos del perfil',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final dataProvider = context.read<DataProvider>();
+                                await dataProvider.fetchUser();
+                              },
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
 
                   final user = provider.user!;

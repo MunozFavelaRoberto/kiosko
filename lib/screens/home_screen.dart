@@ -9,6 +9,7 @@ import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/utils/app_routes.dart';
+import 'package:kiosko/utils/formatters.dart';
 
 class InitialLoadingScreen extends StatelessWidget {
   const InitialLoadingScreen({super.key});
@@ -289,7 +290,7 @@ class _HomeTabState extends State<HomeTab> {
                         Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Text(
-                          '\$${amount.toStringAsFixed(2)}',
+                          getAmountFormat(amount.toString()),
                           style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
@@ -723,7 +724,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '\$${payment.amount.toStringAsFixed(2)}',
+                                    getAmountFormat(payment.amount.toString()),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,

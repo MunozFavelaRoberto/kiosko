@@ -11,6 +11,7 @@ import 'package:kiosko/screens/edit_billing_screen.dart';
 import 'package:kiosko/screens/openpay_webview_screen.dart';
 import 'package:kiosko/utils/error_helper.dart';
 import 'package:kiosko/utils/app_routes.dart';
+import 'package:kiosko/utils/formatters.dart';
 import 'package:provider/provider.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -247,7 +248,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '\$${payment.amount}',
+                                      getAmountFormat(payment.amount.toString()),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -621,7 +622,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  '\$${amount.toStringAsFixed(2)}',
+                                  getAmountFormat(amount.toString()),
                                   style: theme.textTheme.displayMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
