@@ -251,7 +251,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: Colors.blue,
+                                        color: Colors.black,
                                       ),
                                     ),
                                   ],
@@ -416,7 +416,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return const Center(child: Text('No hay tarjeta favorita seleccionada'));
     }
     
-    final logoUrl = CardModel.getBrandLogo(_displayCard!.brand);
+    final logoPath = CardModel.getBrandLogo(_displayCard!.brand);
     final colors = CardModel.getBrandColors(_displayCard!.brand);
     final isDarkColor = _displayCard!.brand.toLowerCase() != 'unknown';
     final textColor = isDarkColor ? Colors.white : Colors.black;
@@ -427,6 +427,54 @@ class _PaymentScreenState extends State<PaymentScreen> {
       colors: [colors['primary']!, colors['secondary']!],
       stops: const [0.2, 1.0],
     );
+
+    // Función helper para mostrar el logo desde assets
+    Widget buildLogo() {
+      if (logoPath.isEmpty) {
+        return Text(
+          _displayCard!.brand.toUpperCase(),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        );
+      }
+      
+      if (logoPath.endsWith('.png')) {
+        return Image.asset(
+          logoPath,
+          height: 30,
+          width: 45,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Text(
+              _displayCard!.brand.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            );
+          },
+        );
+      } else {
+        return SvgPicture.asset(
+          logoPath,
+          height: 30,
+          width: 45,
+          fit: BoxFit.contain,
+          placeholderBuilder: (context) => Text(
+            _displayCard!.brand.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        );
+      }
+    }
 
     return Column(
       children: [
@@ -449,21 +497,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Positioned(
                 top: 12,
                 right: 12,
-                child: logoUrl.isNotEmpty
-                    ? SvgPicture.network(
-                        logoUrl,
-                        height: 30,
-                        width: 45,
-                        fit: BoxFit.contain,
-                      )
-                    : Text(
-                        _displayCard!.brand.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
+                child: buildLogo(),
               ),
               Positioned(
                 left: 16,
@@ -590,7 +624,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   '\$${amount.toStringAsFixed(2)}',
                                   style: theme.textTheme.displayMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: colorScheme.primary,
+                                    color: Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 16),

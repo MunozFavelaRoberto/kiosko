@@ -33,6 +33,9 @@ class CardsScreen extends StatefulWidget {
 class _CardsScreenState extends State<CardsScreen> {
   late List<CardModel> _cards;
   bool _isLoading = true;
+  // Variables para tracking de operaciones por tarjeta
+  int? _favoriteLoadingCardId;
+  int? _deleteLoadingCardId;
   late AuthService _authService;
   final ApiService _apiService = ApiService();
 
@@ -76,6 +79,13 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Future<void> _toggleFavorite(int cardId, CardModel card) async {
+    // Evitar múltiples llamadas simultáneas para la misma tarjeta
+    if (_favoriteLoadingCardId != null) return;
+    
+    setState(() {
+      _favoriteLoadingCardId = cardId;
+    });
+    
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
     final body = {'user_card_id': cardId};
@@ -94,10 +104,19 @@ class _CardsScreenState extends State<CardsScreen> {
           SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al establecer favorita'))),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _favoriteLoadingCardId = null;
+        });
+      }
     }
   }
 
   Future<void> _deleteCard(int cardId, CardModel card) async {
+    // Evitar múltiples llamadas simultáneas
+    if (_deleteLoadingCardId != null) return;
+    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -118,6 +137,10 @@ class _CardsScreenState extends State<CardsScreen> {
 
     if (confirmed != true) return;
 
+    setState(() {
+      _deleteLoadingCardId = cardId;
+    });
+
     final token = await _authService.getToken();
     final headers = {'Authorization': 'Bearer $token'};
 
@@ -135,6 +158,12 @@ class _CardsScreenState extends State<CardsScreen> {
           SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al eliminar tarjeta'))),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _deleteLoadingCardId = null;
+        });
+      }
     }
   }
 
@@ -150,7 +179,7 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Widget _buildCardWidget(CardModel card) {
-    final logoUrl = CardModel.getBrandLogo(card.brand);
+    final logoPath = CardModel.getBrandLogo(card.brand);
     final colors = CardModel.getBrandColors(card.brand);
     final isDarkColor = card.brand.toLowerCase() != 'unknown';
     final textColor = isDarkColor ? Colors.white : Colors.black;
@@ -162,6 +191,55 @@ class _CardsScreenState extends State<CardsScreen> {
       stops: const [0.2, 1.0],
     );
 
+    // Función helper para mostrar el logo desde assets
+    Widget buildLogo() {
+      if (logoPath.isEmpty) {
+        return Text(
+          card.brand.toUpperCase(),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        );
+      }
+      
+      // Determinar si es PNG o SVG
+      if (logoPath.endsWith('.png')) {
+        return Image.asset(
+          logoPath,
+          height: 30,
+          width: 45,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Text(
+              card.brand.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            );
+          },
+        );
+      } else {
+        return SvgPicture.asset(
+          logoPath,
+          height: 30,
+          width: 45,
+          fit: BoxFit.contain,
+          placeholderBuilder: (context) => Text(
+            card.brand.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        );
+      }
+    }
+    
     return Container(
       width: double.infinity,
       height: 200,
@@ -181,21 +259,7 @@ class _CardsScreenState extends State<CardsScreen> {
           Positioned(
             top: 12,
             right: 12,
-            child: logoUrl.isNotEmpty
-                ? SvgPicture.network(
-                    logoUrl,
-                    height: 30,
-                    width: 45,
-                    fit: BoxFit.contain,
-                  )
-                : Text(
-                    card.brand.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
+            child: buildLogo(),
           ),
           Positioned(
             left: 16,
@@ -269,32 +333,54 @@ class _CardsScreenState extends State<CardsScreen> {
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          card.isFavorite == 1 
-                              ? Icons.star 
-                              : Icons.star_border,
-                          color: card.isFavorite == 1 
-                              ? Colors.amber 
-                              : textColor.withValues(alpha: 0.7),
-                          size: 18,
+                      // Indicador de carga para favorito
+                      if (_favoriteLoadingCardId == card.id)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.amber,
+                          ),
+                        )
+                      else
+                        IconButton(
+                          icon: Icon(
+                            card.isFavorite == 1 
+                                ? Icons.star 
+                                : Icons.star_border,
+                            color: card.isFavorite == 1 
+                                ? Colors.amber 
+                                : textColor.withValues(alpha: 0.7),
+                            size: 18,
+                          ),
+                          onPressed: () => _toggleFavorite(card.id, card),
+                          tooltip: card.isFavorite == 1 
+                              ? 'Principal' 
+                              : 'Establecer como principal',
+                          color: Colors.white,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
-                        onPressed: () => _toggleFavorite(card.id, card),
-                        tooltip: card.isFavorite == 1 
-                            ? 'Principal' 
-                            : 'Establecer como principal',
-                        color: Colors.white,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                        onPressed: () => _deleteCard(card.id, card),
-                        tooltip: 'Eliminar',
-                        color: Colors.white,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                      // Indicador de carga para eliminación
+                      if (_deleteLoadingCardId == card.id)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red,
+                          ),
+                        )
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                          onPressed: () => _deleteCard(card.id, card),
+                          tooltip: 'Eliminar',
+                          color: Colors.white,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
                     ],
                   )
                 : GestureDetector(

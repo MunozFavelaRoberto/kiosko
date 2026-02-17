@@ -24,7 +24,8 @@ class DataProvider extends ChangeNotifier {
   double _outstandingAmount = 0.0;
   bool _isLoading = false;
   bool _isUnauthorized = false;
-  bool _isInitialLoading = true; // Flag para controlar la carga inicial
+  bool _isInitialLoading = true;
+  bool _hasAttemptedFetch = false; // Track si ya intentamos obtener datos
 
   List<Category> get categories => _categories;
   List<Service> get services => _services;
@@ -35,6 +36,7 @@ class DataProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isUnauthorized => _isUnauthorized;
   bool get isInitialLoading => _isInitialLoading;
+  bool get hasAttemptedFetch => _hasAttemptedFetch;
 
   Future<void> fetchCategories() async {
     _isLoading = true;
@@ -84,8 +86,20 @@ class DataProvider extends ChangeNotifier {
         final data = await _apiService.get('/client/payments/outstanding', headers: {
           'Authorization': 'Bearer $token',
         });
-        final paymentsData = data['data'];
-        _outstandingAmount = (paymentsData['total'] as num?)?.toDouble() ?? 0.0;
+        debugPrint('Outstanding payments API response: $data');
+        // Verificar estructura de la respuesta
+        if (data != null && data['data'] != null) {
+          final paymentsData = data['data'];
+          if (paymentsData['total'] != null) {
+            _outstandingAmount = (paymentsData['total'] as num?)?.toDouble() ?? 0.0;
+          } else {
+            debugPrint('No se encontró campo total en respuesta: $paymentsData');
+            _outstandingAmount = 0.0;
+          }
+        } else {
+          debugPrint('Estructura de respuesta inesperada: $data');
+          _outstandingAmount = 0.0;
+        }
       } else {
         throw Exception('No hay token disponible');
       }
@@ -94,6 +108,7 @@ class DataProvider extends ChangeNotifier {
       _outstandingAmount = 0.0;
     } finally {
       _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -119,54 +134,55 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> fetchUser() async {
     _isLoading = true;
+    _hasAttemptedFetch = true;
 
     try {
-      // Llamar a la API para obtener datos del perfil del cliente
       final token = await _authService?.getToken();
       if (token != null) {
+        // Obtener datos del perfil desde la API
         final data = await _apiService.get('/client/profile', headers: {
           'Authorization': 'Bearer $token',
         });
         debugPrint('Profile data: $data');
-        // Usar datos del login como base, pero clientNumber del perfil
-        final currentUser = _authService?.currentUser;
-        if (currentUser != null) {
-          final profileData = data['data']['item'];
-          _user = User(
-            clientNumber: profileData['client_number'] as String? ?? 'N/A',
-            status: 'Activo',
-            balance: 0.0,
-            fullName: currentUser.fullName,
-            email: currentUser.email,
-          );
-          _isInitialLoading = false;
-          debugPrint('Usuario obtenido de perfil: ${_user!.fullName} - Cliente: ${_user!.clientNumber}');
-          // Notificar que el usuario se cargó exitosamente
-          notifyListeners();
-        } else {
-          _isInitialLoading = false;
-          throw Exception('No hay datos de usuario disponibles');
-        }
+        
+        // Obtener los datos del perfil directamente de la respuesta API
+        final profileData = data['data']['item'];
+        _user = User(
+          clientNumber: profileData['client_number'] as String? ?? 'N/A',
+          status: 'Activo',
+          balance: 0.0,
+          fullName: profileData['full_name'] as String? ?? 'Usuario',
+          email: profileData['email'] as String? ?? 'email@desconocido.com',
+        );
+        _isInitialLoading = false;
+        // Éxito - usuario válido
+        _isUnauthorized = false;
+        debugPrint('Usuario obtenido de perfil: ${_user!.fullName} - Cliente: ${_user!.clientNumber}');
+        notifyListeners();
       } else {
         _isInitialLoading = false;
-        throw Exception('No hay token disponible');
+        // Token null - no hay sesión
+        _isUnauthorized = true;
+        _user = null;
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
       _isInitialLoading = false;
-      // Verificar si es error de autorización (401)
-      if (e.toString().contains('No autorizado')) {
+      
+      // Solo marcar como no autorizado si es error explícito de autenticación
+      final errorMsg = e.toString().toLowerCase();
+      if (errorMsg.contains('no autorizado') || errorMsg.contains('401') || errorMsg.contains('unauthorized')) {
         _isUnauthorized = true;
+        _user = null;
       } else {
+        // Error de red u otro tipo - no marcar como no autorizado
+        // Mantener el estado actual
         _isUnauthorized = false;
       }
-      // Sin datos disponibles
-      _user = null;
-      // IMPORTANTE: Notificar a los widgets que el estado cambió
       notifyListeners();
     } finally {
       _isLoading = false;
-      // Notificar que la carga terminó
       notifyListeners();
     }
   }
@@ -203,9 +219,19 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Resetear estado de autorización (para cuando usuario hace logout)
+  // Resetear estado de autorización (para cuando usuario hace logout o inicia sesión)
   void resetUnauthorized() {
     _isUnauthorized = false;
+    _user = null;
+    _hasAttemptedFetch = false;
+    notifyListeners();
+  }
+
+  // Método para establecer usuario manualmente (después de login exitoso)
+  void setUser(User user) {
+    _user = user;
+    _isUnauthorized = false;
+    _isInitialLoading = false;
     notifyListeners();
   }
 

@@ -12,6 +12,40 @@ class PaymentSuccessScreen extends StatefulWidget {
 class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Actualizar datos automáticamente al mostrar la pantalla de éxito
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshData();
+    });
+  }
+
+  Future<void> _refreshData() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Actualizar datos del provider
+      final dataProvider = Provider.of<DataProvider>(
+        context,
+        listen: false,
+      );
+      await dataProvider.fetchUser();
+      await dataProvider.fetchOutstandingPayments();
+      await dataProvider.fetchPaymentHistory();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _handleReturn() async {
     if (!mounted) return;
 

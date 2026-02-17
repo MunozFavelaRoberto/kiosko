@@ -7,6 +7,7 @@ import 'package:external_path/external_path.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
+import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/utils/app_routes.dart';
 
 class InitialLoadingScreen extends StatelessWidget {
@@ -195,8 +196,14 @@ class _HomeTabState extends State<HomeTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Usuario null después de carga completa
-              if (provider.user == null) {
+              if (!provider.hasAttemptedFetch) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              
+              // Usuario null Y con error de autorización confirmado (sesión expirada)
+              if (provider.user == null && provider.isUnauthorized) {
                 return Center(
                   child: Container(
                     padding: const EdgeInsets.all(24),
@@ -210,15 +217,48 @@ class _HomeTabState extends State<HomeTab> {
                         Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
                         const SizedBox(height: 16),
                         const Text(
-                          'No autorizado',
+                          'Sesión expirada',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final authService = Provider.of<AuthService>(context, listen: false);
+                            final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                            dataProvider.resetUnauthorized();
+                            await authService.logout();
+                            if (!context.mounted) return;
+                            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                          },
+                          child: const Text('Volver al login'),
+                        ),
                       ],
                     ),
+                  ),
+                );
+              }
+              
+              // Usuario null pero sin error de autorización (error de red)
+              if (provider.user == null) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off, color: Colors.grey.shade400, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Error de conexión',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('No se pudo cargar la información', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(onPressed: _refreshData, child: const Text('Reintentar')),
+                    ],
                   ),
                 );
               }
@@ -253,21 +293,20 @@ class _HomeTabState extends State<HomeTab> {
                           style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blueAccent,
+                            color: Colors.black,
                           ),
                         ),
                         const SizedBox(height: 32),
-                        ElevatedButton.icon(
+                        ElevatedButton(
                           onPressed: status == 'Pendiente' ? () {
                             Navigator.pushNamed(context, AppRoutes.payment);
                           } : null,
-                          icon: Icon(status == 'Pendiente' ? Icons.lock_open : Icons.lock),
-                          iconAlignment: IconAlignment.end,
-                          label: const Text('Pagar', style: TextStyle(fontSize: 24)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
                           ),
+                          child: Text('Pagar', style: TextStyle(fontSize: 24, color: Colors.white)),
                         ),
                       ],
                     ),
@@ -443,8 +482,15 @@ class _PaymentsTabState extends State<PaymentsTab> {
           const ClientNumberHeader(),
           Expanded(
             child: () {
-              // Usuario null después de carga completa
-              if (provider.user == null) {
+              // Mientras está cargando inicialmente, mostrar indicador
+              if (provider.isLoading && !provider.hasAttemptedFetch) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              
+              // Usuario null Y con error de autorización confirmado (sesión expirada)
+              if (provider.user == null && provider.isUnauthorized) {
                 return Center(
                   child: Container(
                     padding: const EdgeInsets.all(24),
@@ -458,15 +504,48 @@ class _PaymentsTabState extends State<PaymentsTab> {
                         Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 48),
                         const SizedBox(height: 16),
                         const Text(
-                          'No autorizado',
+                          'Sesión expirada',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final authService = Provider.of<AuthService>(context, listen: false);
+                            final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                            dataProvider.resetUnauthorized();
+                            await authService.logout();
+                            if (!context.mounted) return;
+                            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                          },
+                          child: const Text('Volver al login'),
+                        ),
                       ],
                     ),
+                  ),
+                );
+              }
+              
+              // Usuario null pero sin error de autorización (error de red)
+              if (provider.user == null) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off, color: Colors.grey.shade400, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Error de conexión',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('No se pudo cargar la información', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(onPressed: _refreshData, child: const Text('Reintentar')),
+                    ],
                   ),
                 );
               }

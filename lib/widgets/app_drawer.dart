@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/utils/app_routes.dart';
 import 'package:provider/provider.dart';
 
@@ -13,12 +14,18 @@ class AppDrawer extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
+          Container(
+            height: 103,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.grey.shade700,
             ),
             child: Center(
-              child: Image.asset('assets/images/svr_logo.png'),
+              child: Image.asset(
+                'assets/images/svr_logo.png',
+                width: 80,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           Expanded(
@@ -26,15 +33,15 @@ class AppDrawer extends StatelessWidget {
               padding: EdgeInsets.zero,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person_outline, color: Colors.blueAccent),
-                  title: const Text("Perfil"),
+                  leading: const Icon(Icons.person_outline, color: Colors.black),
+                  title: const Text("Mi perfil"),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, AppRoutes.profile);
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.credit_card, color: Colors.blueAccent),
+                                ListTile(
+                  leading: const Icon(Icons.credit_card, color: Colors.black),
                   title: const Text("Tarjetas"),
                   onTap: () {
                     Navigator.pop(context);
@@ -42,7 +49,7 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.receipt_long_outlined, color: Colors.blueAccent),
+                  leading: const Icon(Icons.receipt_long_outlined, color: Colors.black),
                   title: const Text("Facturación"),
                   onTap: () {
                     Navigator.pop(context);
@@ -51,10 +58,9 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                  leading: const Icon(Icons.logout_rounded, color: Colors.black),
                   title: const Text(
                     "Cerrar Sesión",
-                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                   onTap: () async {
                     // 1. diálogo de confirmación
@@ -71,12 +77,18 @@ class AppDrawer extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () async {
-                                // 2. Borrar estado de login
+                                // 2. Obtener referencia al DataProvider
+                                final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                                
+                                // 3. Resetear estado de autorización
+                                dataProvider.resetUnauthorized();
+                                
+                                // 4. Borrar estado de login
                                 await authService.logout();
 
                                 if (!context.mounted) return;
 
-                                // 3. Volver al Login eliminando todas las rutas previas
+                                // 5. Volver al Login eliminando todas las rutas previas
                                 Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
                               },
                               child: const Text("Salir", style: TextStyle(color: Colors.red)),

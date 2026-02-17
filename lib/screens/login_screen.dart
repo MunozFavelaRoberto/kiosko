@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/services/auth_service.dart';
+import 'package:kiosko/services/data_provider.dart';
 import 'package:kiosko/models/biometric_type_info.dart';
 import 'package:kiosko/utils/app_routes.dart';
 
@@ -35,6 +36,11 @@ class _LoginScreenState extends State<LoginScreen> {
   // Función que centraliza el éxito del login
   Future<void> _handleLoginSuccess() async {
     await _authService.saveLoginState(); // Guardamos sesión en disco
+    
+    // Resetear estado de autorización en DataProvider
+    if (!mounted) return;
+    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+    dataProvider.resetUnauthorized();
     
     if (!mounted) return;
     

@@ -169,13 +169,14 @@ class CardModel {
     }
   }
 
-  /// Obtener la URL del logo de la marca
+  /// Obtener la ruta del logo de la marca (asset local)
+  /// Retorna la ruta del asset o cadena vacía si no existe
   static String getBrandLogo(String brand) {
     final logos = {
-      'visa': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
-      'mastercard': 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
-      'amex': 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
-      'discover': 'https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg',
+      'visa': 'assets/images/Visa_Inc._logo.svg',
+      'mastercard': 'assets/images/Mastercard-logo.svg',
+      'amex': 'assets/images/American_Express_logo.svg',
+      'discover': 'assets/images/discover.png',
     };
     return logos[brand.toLowerCase()] ?? '';
   }

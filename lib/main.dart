@@ -174,8 +174,10 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
     // Verificar estado de autorización
     final dataProvider = context.watch<DataProvider>();
     
-    // Si no está autorizado, mostrar pantalla completa de "No Autorizado"
-    if (dataProvider.isUnauthorized) {
+    // Solo mostrar pantalla de "No Autorizado" después de que:
+    // 1. Se haya intentado obtener los datos del usuario (hasAttemptedFetch)
+    // 2. Y el servidor haya rechazado la solicitud explícitamente
+    if (dataProvider.hasAttemptedFetch && dataProvider.isUnauthorized) {
       return _buildUnauthorizedScreen(context, dataProvider);
     }
     

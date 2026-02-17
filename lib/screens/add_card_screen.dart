@@ -25,6 +25,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   String? _selectedYear;
   bool _isFavorite = false;
   bool _isLoading = false;
+  bool _showSuccess = false;
   final bool _isCvvVisible = false;
   String _detectedBrand = '';
   String _cardNumberHint = '1234 5678 9012 3456';
@@ -164,6 +165,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   Future<void> _saveCard() async {
     if (_formKey.currentState!.validate()) {
+      // Deshabilitar todos los campos y botones
       setState(() {
         _isLoading = true;
       });
@@ -184,10 +186,17 @@ class _AddCardScreenState extends State<AddCardScreen> {
       try {
         await _apiService.post('/client/cards', headers: headers, body: body);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tarjeta agregada exitosamente')),
-          );
-          Navigator.pop(context, true);
+          // Mostrar estado de éxito
+          setState(() {
+            _showSuccess = true;
+          });
+          
+          // Esperar un momento para que el usuario vea el éxito
+          await Future.delayed(const Duration(milliseconds: 1500));
+          
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -199,6 +208,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
         if (mounted) {
           setState(() {
             _isLoading = false;
+            _showSuccess = false;
           });
         }
       }
@@ -206,20 +216,37 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   Widget _buildCardPrefixIcon() {
-    final logoUrl = CardModel.getBrandLogo(_detectedBrand);
+    final logoPath = CardModel.getBrandLogo(_detectedBrand);
     
-    if (logoUrl.isNotEmpty) {
+    if (logoPath.isEmpty) {
+      return const Icon(Icons.credit_card);
+    }
+    
+    if (logoPath.endsWith('.png')) {
       return Container(
         padding: const EdgeInsets.all(8),
-        child: SvgPicture.network(
-          logoUrl,
+        child: Image.asset(
+          logoPath,
           height: 24,
           width: 36,
           fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.credit_card);
+          },
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        child: SvgPicture.asset(
+          logoPath,
+          height: 24,
+          width: 36,
+          fit: BoxFit.contain,
+          placeholderBuilder: (context) => const Icon(Icons.credit_card),
         ),
       );
     }
-    return const Icon(Icons.credit_card);
   }
 
   @override
@@ -430,28 +457,59 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton(
-                      onPressed: _isLoading ? null : _saveCard,
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // Overlay de procesamiento/éxito
+                  if (_isLoading || _showSuccess)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _showSuccess 
+                            ? Colors.green.withValues(alpha: 0.1) 
+                            : Colors.blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _showSuccess ? Colors.green : Colors.blue,
+                          width: 1,
                         ),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_showSuccess)
+                            const Icon(Icons.check_circle, color: Colors.green, size: 24)
+                          else
+                            const SizedBox(
                               width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _showSuccess 
+                                ? '¡Tarjeta agregada exitosamente!' 
+                                : 'Procesando...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: _showSuccess ? Colors.green : Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: FilledButton(
+                        onPressed: _isLoading ? null : _saveCard,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
