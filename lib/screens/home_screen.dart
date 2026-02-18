@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:external_path/external_path.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:kiosko/widgets/app_drawer.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/services/data_provider.dart';
@@ -331,6 +332,9 @@ class PaymentsTab extends StatefulWidget {
 }
 
 class _PaymentsTabState extends State<PaymentsTab> {
+  // Loading por documento específico (key = "{paymentId}_{fileType}")
+  final Set<String> _loadingDocuments = {};
+  
   String _formatDate(DateTime date) {
     final months = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -351,121 +355,71 @@ class _PaymentsTabState extends State<PaymentsTab> {
     await dataProvider.refreshAllData();
   }
 
-  Future<void> _downloadFile(String fileType, int paymentId, String uiid) async {
+  Future<void> _viewFile(String fileType, int paymentId, String uiid) async {
+    // Marcar solo este botón como cargando
+    setState(() {
+      _loadingDocuments.add('${paymentId}_$fileType');
+    });
+    
     final provider = context.read<DataProvider>();
     
     try {
       String base64String;
       String extension;
+      String title;
 
       if (fileType == 'pdf') {
         base64String = await provider.downloadInvoice(paymentId, 'pdf');
         extension = 'pdf';
+        title = 'Factura PDF';
       } else if (fileType == 'xml') {
         base64String = await provider.downloadInvoice(paymentId, 'xml');
         extension = 'xml';
+        title = 'Factura XML';
       } else {
         base64String = await provider.downloadTicket(paymentId);
         extension = 'pdf';
+        title = 'Ticket de Pago';
       }
 
-      // Decodificar base64
-      final bytes = base64Decode(base64String);
-      
-      // Generar nombre del archivo
-      final fileName = '$uiid.$extension';
-      
-      String finalFilePath;
-      String message;
-      
-      if (Platform.isIOS) {
-        // iOS: Guardar en Documents usando path_provider
-        final documentsDir = await getApplicationDocumentsDirectory();
-        final iosDir = Directory('${documentsDir.path}/Documents');
-        
-        // Crear directorio Documents si no existe
-        if (!await iosDir.exists()) {
-          await iosDir.create(recursive: true);
-        }
-        
-        // Generar nombre único
-        finalFilePath = '${iosDir.path}/$fileName';
-        int counter = 1;
-        while (await File(finalFilePath).exists()) {
-          finalFilePath = '${iosDir.path}/$uiid ($counter).$extension';
-          counter++;
-        }
-        
-        message = '${fileType.toUpperCase()} guardado en Archivos';
-      } else {
-        // Android: Guardar en Downloads usando external_path
-        String downloadsPath = await ExternalPath.getExternalStoragePublicDirectory(
-          ExternalPath.DIRECTORY_DOWNLOAD,
-        );
-        
-        finalFilePath = '$downloadsPath/$fileName';
-        int counter = 1;
-        while (await File(finalFilePath).exists()) {
-          finalFilePath = '$downloadsPath/$uiid ($counter).$extension';
-          counter++;
-        }
-        
-        message = '${fileType.toUpperCase()} guardado en Downloads';
-      }
-      
-      // Guardar el archivo
-      final file = File(finalFilePath);
-      await file.writeAsBytes(bytes);
-      
-      // Mostrar mensaje de éxito
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Ver',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Archivo guardado'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Ubicación: $finalFilePath'),
-                      const SizedBox(height: 8),
-                      if (Platform.isIOS) ...[
-                        const Text('Para ver el archivo:'),
-                        const Text('1. Abre la app Archivos'),
-                        const Text('2. Ve a Mi iPhone > Documentos'),
-                        Text('3. Busca el archivo $fileName'),
-                      ] else ...[
-                        const Text('Para ver el archivo:'),
-                        const Text('1. Abre la app Archivos'),
-                        const Text('2. Ve a Almacenamiento > Download'),
-                      ],
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cerrar'),
-                    ),
-                  ],
-                ),
-              );
-            },
+
+      // Navegar al visualizador
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DocumentViewerScreen(
+            base64String: base64String,
+            fileName: '$uiid.$extension',
+            title: title,
+            fileType: fileType == 'xml' ? 'xml' : 'pdf',
           ),
         ),
-      );
+      ).then((_) {
+        // Regresar de la pantalla del visualizador
+        if (mounted) {
+          setState(() {
+            _loadingDocuments.remove('${paymentId}_$fileType');
+          });
+        }
+      });
     } catch (e) {
       if (!mounted) return;
+      setState(() {
+        _loadingDocuments.remove('${paymentId}_$fileType');
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al descargar: $e')),
+        SnackBar(content: Text('Error al obtener documento: $e')),
       );
     }
+  }
+
+  bool _isLoading(String fileType, int paymentId) {
+    return _loadingDocuments.contains('${paymentId}_$fileType');
+  }
+
+  bool _isAnyLoading() {
+    return _loadingDocuments.isNotEmpty;
   }
 
   @override
@@ -740,55 +694,112 @@ class _PaymentsTabState extends State<PaymentsTab> {
                                   // Botón PDF - solo si tiene invoice_id
                                   if (payment.invoiceId != null) ...[
                                     IconButton.outlined(
-                                      icon: Icon(
-                                        Icons.picture_as_pdf,
-                                        color: Colors.red.shade700,
-                                        size: 24,
-                                      ),
+                                      icon: _isLoading('pdf', payment.id)
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.red,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.picture_as_pdf,
+                                              color: _isAnyLoading() 
+                                                  ? Colors.grey 
+                                                  : Colors.red.shade700,
+                                              size: 24,
+                                            ),
                                       style: IconButton.styleFrom(
-                                        foregroundColor: Colors.red.shade700,
-                                        side: BorderSide(color: Colors.red.shade700),
+                                        foregroundColor: _isAnyLoading() 
+                                            ? Colors.grey 
+                                            : Colors.red.shade700,
+                                        side: BorderSide(
+                                          color: _isAnyLoading() 
+                                              ? Colors.grey 
+                                              : Colors.red.shade700,
+                                        ),
                                       ),
-                                      tooltip: 'Descargar factura en PDF',
-                                      onPressed: () {
-                                        _downloadFile('pdf', payment.id, payment.uiid);
-                                      },
+                                      tooltip: 'Ver factura en PDF',
+                                      onPressed: _isAnyLoading()
+                                          ? null
+                                          : () {
+                                              _viewFile('pdf', payment.id, payment.uiid);
+                                            },
                                     ),
                                   ],
                                   // Botón XML - solo si tiene invoice_id
                                   if (payment.invoiceId != null) ...[
                                     IconButton.outlined(
-                                      icon: Icon(
-                                        Icons.code,
-                                        color: Colors.green.shade700,
-                                        size: 24,
-                                      ),
+                                      icon: _isLoading('xml', payment.id)
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.green,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.code,
+                                              color: _isAnyLoading() 
+                                                  ? Colors.grey 
+                                                  : Colors.green.shade700,
+                                              size: 24,
+                                            ),
                                       style: IconButton.styleFrom(
-                                        foregroundColor: Colors.green.shade700,
-                                        side: BorderSide(color: Colors.green.shade700),
+                                        foregroundColor: _isAnyLoading() 
+                                            ? Colors.grey 
+                                            : Colors.green.shade700,
+                                        side: BorderSide(
+                                          color: _isAnyLoading() 
+                                              ? Colors.grey 
+                                              : Colors.green.shade700,
+                                        ),
                                       ),
-                                      tooltip: 'Descargar factura en XML',
-                                      onPressed: () {
-                                        _downloadFile('xml', payment.id, payment.uiid);
-                                      },
+                                      tooltip: 'Ver factura en XML',
+                                      onPressed: _isAnyLoading()
+                                          ? null
+                                          : () {
+                                              _viewFile('xml', payment.id, payment.uiid);
+                                            },
                                     ),
                                   ],
                                   // Botón Ticket - solo si tiene transaction_id
                                   if (payment.transactionId != null) ...[
                                     IconButton.outlined(
-                                      icon: Icon(
-                                        Icons.receipt_long,
-                                        color: Colors.blue.shade700,
-                                        size: 24,
-                                      ),
+                                      icon: _isLoading('ticket', payment.id)
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.blue,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.receipt_long,
+                                              color: _isAnyLoading() 
+                                                  ? Colors.grey 
+                                                  : Colors.blue.shade700,
+                                              size: 24,
+                                            ),
                                       style: IconButton.styleFrom(
-                                        foregroundColor: Colors.blue.shade700,
-                                        side: BorderSide(color: Colors.blue.shade700),
+                                        foregroundColor: _isAnyLoading() 
+                                            ? Colors.grey 
+                                            : Colors.blue.shade700,
+                                        side: BorderSide(
+                                          color: _isAnyLoading() 
+                                              ? Colors.grey 
+                                              : Colors.blue.shade700,
+                                        ),
                                       ),
-                                      tooltip: 'Descargar ticket de pago',
-                                      onPressed: () {
-                                        _downloadFile('ticket', payment.id, payment.uiid);
-                                      },
+                                      tooltip: 'Ver ticket de pago',
+                                      onPressed: _isAnyLoading()
+                                          ? null
+                                          : () {
+                                              _viewFile('ticket', payment.id, payment.uiid);
+                                            },
                                     ),
                                   ],
                                   // Mensaje si no tiene documentos
@@ -815,6 +826,178 @@ class _PaymentsTabState extends State<PaymentsTab> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Pantalla visualizadora de documentos (PDF y XML)
+class DocumentViewerScreen extends StatefulWidget {
+  final String base64String;
+  final String fileName;
+  final String title;
+  final String fileType;
+
+  const DocumentViewerScreen({
+    super.key,
+    required this.base64String,
+    required this.fileName,
+    required this.title,
+    required this.fileType,
+  });
+
+  @override
+  State<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
+}
+
+class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
+  bool _isLoading = true;
+  String? _error;
+  String? _filePath;
+  String? _xmlContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareFile();
+  }
+
+  Future<void> _prepareFile() async {
+    try {
+      final bytes = base64Decode(widget.base64String);
+      
+      // Si es XML, convertir a string para mostrar como texto
+      if (widget.fileType == 'xml') {
+        _xmlContent = utf8.decode(bytes);
+      }
+      
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/${widget.fileName}');
+      await file.writeAsBytes(bytes);
+      
+      setState(() {
+        _filePath = file.path;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _shareFile() async {
+    if (_filePath == null) return;
+    
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(_filePath!)],
+          text: widget.title,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al compartir: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          if (_filePath != null)
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Compartir',
+              onPressed: _shareFile,
+            ),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando documento...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade700),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar documento',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.fileType == 'xml' && _xmlContent != null) {
+      // Mostrar XML como texto con formato
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: SelectableText(
+          _xmlContent!,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+          ),
+        ),
+      );
+    }
+
+    // Mostrar PDF
+    return PDFView(
+      filePath: _filePath!,
+      enableSwipe: true,
+      swipeHorizontal: false,
+      autoSpacing: true,
+      pageFling: true,
+      pageSnap: true,
+      fitPolicy: FitPolicy.BOTH,
+      preventLinkNavigation: false,
+      onRender: (pages) {
+        debugPrint('Documento renderizado con $pages páginas');
+      },
+      onError: (error) {
+        debugPrint('Error al renderizar PDF: $error');
+      },
+      onPageError: (page, error) {
+        debugPrint('Error en página $page: $error');
+      },
     );
   }
 }

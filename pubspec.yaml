@@ -29,9 +29,9 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   cupertino_icons: ^1.0.8
-  external_path: ^2.2.0
   flutter:
     sdk: flutter
+  flutter_pdfview: ^1.4.4
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.2.3
   http: ^1.6.0

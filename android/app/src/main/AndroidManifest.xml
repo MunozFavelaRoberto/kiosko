@@ -1,15 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-<!-- Public Downloads folder permission -->
-<!-- NOTE: This permission is required so users can access their invoices and tickets 
-     from the device's Files app. Invoices are tax documents that users need to keep 
-     for their accounting and tax declaration. Access is limited only to the Downloads 
-     folder where the app saves the documents. -->
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-<!-- Secure storage for biometric credentials -->
-<uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="kiosko"
         android:name="${applicationName}"
