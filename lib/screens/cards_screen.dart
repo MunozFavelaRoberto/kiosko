@@ -92,18 +92,20 @@ class _CardsScreenState extends State<CardsScreen> {
 
     try {
       await _apiService.post('/client/cards/favorite', headers: headers, body: body);
+      
+      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
+      await Future.delayed(const Duration(seconds: 1));
+      
       await _loadCards();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tarjeta establecida como principal')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tarjeta establecida como principal')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al establecer favorita'))),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al establecer favorita'))),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -146,18 +148,20 @@ class _CardsScreenState extends State<CardsScreen> {
 
     try {
       await _apiService.delete('/client/cards/$cardId', headers: headers);
+      
+      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
+      await Future.delayed(const Duration(seconds: 1));
+      
       await _loadCards();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tarjeta eliminada exitosamente')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tarjeta eliminada exitosamente')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al eliminar tarjeta'))),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ErrorHelper.parseError(e.toString(), defaultMsg: 'Error al eliminar tarjeta'))),
+      );
     } finally {
       if (mounted) {
         setState(() {

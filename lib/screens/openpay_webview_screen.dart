@@ -209,8 +209,9 @@ class _OpenPayDeviceSessionScreenState extends State<OpenPayDeviceSessionScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Ocultar la barra de estado para un pengalaman más fluido
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       body: Center(
         child: Container(
           width: 280,
@@ -235,21 +236,15 @@ class _OpenPayDeviceSessionScreenState extends State<OpenPayDeviceSessionScreen>
                   color: Colors.red,
                   size: 52,
                 )
-              else if (_isLoading)
+              else
                 const SizedBox(
                   width: 48,
                   height: 48,
                   child: CircularProgressIndicator(strokeWidth: 3),
-                )
-              else
-                const Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 52,
                 ),
               const SizedBox(height: 24),
               Text(
-                _error ?? 'Inicializando sistema de pagos...',
+                _error ?? 'Procesando...',
                 style: TextStyle(
                   fontSize: 15,
                   color: _error != null ? Colors.red : Colors.grey[700],

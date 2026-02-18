@@ -26,7 +26,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   bool _isFavorite = false;
   bool _isLoading = false;
   bool _showSuccess = false;
-  final bool _isCvvVisible = false;
+  bool _isCvvVisible = false;
   String _detectedBrand = '';
   String _cardNumberHint = '1234 5678 9012 3456';
 
@@ -320,7 +320,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(19),
                       _CardNumberFormatter(),
                     ],
                     validator: _validateCardNumber,
@@ -409,6 +408,16 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       labelText: 'CVV',
                       hintText: _detectedBrand == 'amex' ? '1234' : '123',
                       prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isCvvVisible ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isCvvVisible = !_isCvvVisible;
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -526,31 +535,34 @@ class _CardNumberFormatter extends TextInputFormatter {
     final text = newValue.text.replaceAll(' ', '');
     
     final brand = CardModel.detectBrand(text);
+    final isAmex = brand == 'amex';
     
-    if (brand == 'amex') {
-      final buffer = StringBuffer();
-      for (int i = 0; i < text.length; i++) {
+    // Limitar dígitos según la marca:
+    // - Amex: 15 dígitos (17 caracteres con espacios)
+    // - Otras: 16 dígitos (19 caracteres con espacios)
+    final maxDigits = isAmex ? 15 : 16;
+    final limitedText = text.length > maxDigits ? text.substring(0, maxDigits) : text;
+    
+    // Formatear con espacios
+    final buffer = StringBuffer();
+    for (int i = 0; i < limitedText.length; i++) {
+      if (isAmex) {
+        // Amex: #### ###### #####
         if (i == 4 || i == 10) {
           buffer.write(' ');
         }
-        buffer.write(text[i]);
-      }
-      return TextEditingValue(
-        text: buffer.toString(),
-        selection: TextSelection.collapsed(offset: buffer.length),
-      );
-    } else {
-      final buffer = StringBuffer();
-      for (int i = 0; i < text.length; i++) {
+      } else {
+        // Visa/Mastercard: #### #### #### ####
         if (i > 0 && i % 4 == 0) {
           buffer.write(' ');
         }
-        buffer.write(text[i]);
       }
-      return TextEditingValue(
-        text: buffer.toString(),
-        selection: TextSelection.collapsed(offset: buffer.length),
-      );
+      buffer.write(limitedText[i]);
     }
+    
+    return TextEditingValue(
+      text: buffer.toString(),
+      selection: TextSelection.collapsed(offset: buffer.length),
+    );
   }
 }

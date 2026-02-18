@@ -311,6 +311,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // Obtener device session ID solo si no lo tenemos
     if (_deviceSessionId == null) {
       debugPrint('PaymentScreen: Obteniendo device session ID...');
+      
+      // Marcar como procesando desde el inicio
+      if (!mounted) return;
+      setState(() {
+        _isProcessingPayment = true;
+      });
+      
       try {
         final deviceResult = await Navigator.push<Map<String, dynamic>>(
           context,
@@ -324,6 +331,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (!mounted) return;
 
         if (deviceResult == null || deviceResult.containsKey('error')) {
+          // Error en device session - restablecer estado y mostrar error
+          setState(() {
+            _isProcessingPayment = false;
+          });
           if (deviceResult != null && deviceResult.containsKey('error')) {
             debugPrint('PaymentScreen: Error en device session: ${deviceResult["error"]}');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +349,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } catch (e) {
         debugPrint('PaymentScreen: Excepción al obtener device session: $e');
         if (!mounted) return;
+        setState(() {
+          _isProcessingPayment = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al obtener device session: $e')),
         );
@@ -347,6 +361,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     if (!mounted) return;
 
+    // Asegurar que está en estado de procesamiento
     setState(() {
       _isProcessingPayment = true;
     });
@@ -386,15 +401,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
       
       await _apiService.post('/client/payments/pay', headers: headers, body: body);
       
+      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
+      await Future.delayed(const Duration(seconds: 1));
+      
       debugPrint('PaymentScreen: Pago exitoso!');
 
       if (!mounted) return;
 
-      // Navegar a la pantalla de éxito
-      Navigator.pushReplacementNamed(context, AppRoutes.paymentSuccess);
+      // Navegar a la pantalla de éxito (removiendo todas las pantallas anteriores)
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.paymentSuccess,
+        (route) => route.isFirst,
+      );
     } catch (e) {
       debugPrint('PaymentScreen: Error en pago: $e');
       if (!mounted) return;
+
+      setState(() {
+        _isProcessingPayment = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -403,12 +428,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessingPayment = false;
-        });
-      }
     }
   }
 
@@ -742,14 +761,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                               ),
                               child: _isProcessingPayment
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
+                                  ? const Text('Procesando...', style: TextStyle(fontSize: 18))
                                   : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
                             ),
                           ),

@@ -19,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final AuthService _authService;
   late final ApiService _apiService;
   bool _loading = true;
+  bool _isUpdatingEmail = false; // Para mostrar indicador de carga durante actualización de email
   List<BiometricTypeInfo> _availableBiometrics = [];
   Map<String, bool> _biometricStates = {};
   bool _initialLoadComplete = false;
@@ -212,14 +213,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (newEmail != null) {
+      // Mostrar indicador de carga
+      setState(() {
+        _isUpdatingEmail = true;
+      });
+      
       // Llamar a la API para actualizar el email
       final token = await _authService.getToken();
       if (token == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error: No hay token de autenticación')),
-          );
-        }
+        setState(() {
+          _isUpdatingEmail = false;
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: No hay token de autenticación')),
+        );
         return;
       }
 
@@ -243,23 +251,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             dataProvider.updateUser(updatedUser);
           }
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Correo actualizado correctamente')),
-            );
-          }
+          // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
+          await Future.delayed(const Duration(seconds: 1));
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Correo actualizado correctamente')),
+          );
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Error al actualizar el correo')),
-            );
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al actualizar el correo')),
+          );
         }
       } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $e')),
+        );
+      } finally {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error de conexión: $e')),
-          );
+          setState(() {
+            _isUpdatingEmail = false;
+          });
         }
       }
     }
@@ -398,11 +412,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const Divider(),
                             ListTile(
                               title: const Text('Correo electrónico'),
-                              subtitle: Text(user.email),
-                              trailing: IconButton.outlined(
-                                icon: const Icon(Icons.edit, color: Colors.orange),
-                                onPressed: _editEmail,
-                              ),
+                              subtitle: _isUpdatingEmail
+                                  ? const Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text('Actualizando...'),
+                                      ],
+                                    )
+                                  : Text(user.email),
+                              trailing: _isUpdatingEmail
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : IconButton.outlined(
+                                      icon: const Icon(Icons.edit, color: Colors.orange),
+                                      onPressed: _editEmail,
+                                    ),
                             ),
                           ],
                         ),

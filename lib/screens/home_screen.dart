@@ -418,55 +418,53 @@ class _PaymentsTabState extends State<PaymentsTab> {
       await file.writeAsBytes(bytes);
       
       // Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Ver',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Archivo guardado'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Ubicación: $finalFilePath'),
-                        const SizedBox(height: 8),
-                        if (Platform.isIOS) ...[
-                          const Text('Para ver el archivo:'),
-                          const Text('1. Abre la app Archivos'),
-                          const Text('2. Ve a Mi iPhone > Documentos'),
-                          Text('3. Busca el archivo $fileName'),
-                        ] else ...[
-                          const Text('Para ver el archivo:'),
-                          const Text('1. Abre la app Archivos'),
-                          const Text('2. Ve a Almacenamiento > Download'),
-                        ],
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Ver',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Archivo guardado'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Ubicación: $finalFilePath'),
+                      const SizedBox(height: 8),
+                      if (Platform.isIOS) ...[
+                        const Text('Para ver el archivo:'),
+                        const Text('1. Abre la app Archivos'),
+                        const Text('2. Ve a Mi iPhone > Documentos'),
+                        Text('3. Busca el archivo $fileName'),
+                      ] else ...[
+                        const Text('Para ver el archivo:'),
+                        const Text('1. Abre la app Archivos'),
+                        const Text('2. Ve a Almacenamiento > Download'),
                       ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cerrar'),
-                      ),
                     ],
                   ),
-                );
-              },
-            ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al descargar: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al descargar: $e')),
+      );
     }
   }
 
