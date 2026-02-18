@@ -590,12 +590,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
         const SizedBox(height: 16),
         Center(
           child: ElevatedButton(
-            onPressed: _changeCard,
+            onPressed: _isProcessingPayment ? null : _changeCard,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Cambiar Tarjeta'),
+            child: Text(
+              'Cambiar Tarjeta',
+              style: TextStyle(
+                color: _isProcessingPayment ? Colors.grey : Colors.white,
+              ),
+            ),
           ),
         ),
       ],
@@ -649,12 +654,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
-                                  onPressed: _showPaymentDetails,
+                                  onPressed: _isProcessingPayment ? null : _showPaymentDetails,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.lightBlue,
                                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                                   ),
-                                  child: const Text('Detalle'),
+                                  child: Text(
+                                    'Detalle',
+                                    style: TextStyle(
+                                      color: _isProcessingPayment ? Colors.grey : null,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -674,15 +684,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             children: [
                               Switch(
                                 value: _requiresInvoice,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _requiresInvoice = value;
-                                  });
-                                },
+                                onChanged: _isProcessingPayment
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          _requiresInvoice = value;
+                                        });
+                                      },
                                 activeThumbColor: colorScheme.primary,
                               ),
                               const SizedBox(width: 16),
-                              const Text('Necesito factura'),
+                              Text(
+                                'Necesito factura',
+                                style: TextStyle(
+                                  color: _isProcessingPayment ? Colors.grey : null,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 32),
@@ -698,9 +715,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   ),
                                 ),
                                 OutlinedButton.icon(
-                                  onPressed: _changeFiscalData,
-                                  icon: const Icon(Icons.edit, color: Colors.orange),
-                                  label: const Text('Cambiar'),
+                                  onPressed: _isProcessingPayment ? null : _changeFiscalData,
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: _isProcessingPayment ? Colors.grey : Colors.orange,
+                                  ),
+                                  label: Text(
+                                    'Cambiar',
+                                    style: TextStyle(
+                                      color: _isProcessingPayment ? Colors.grey : null,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -761,7 +786,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                               ),
                               child: _isProcessingPayment
-                                  ? const Text('Procesando...', style: TextStyle(fontSize: 18))
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Text('Procesando...', style: TextStyle(fontSize: 18)),
+                                      ],
+                                    )
                                   : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
                             ),
                           ),
