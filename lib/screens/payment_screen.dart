@@ -642,7 +642,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               foregroundColor: Colors.white,
             ),
             child: Text(
-              'Cambiar Tarjeta',
+              'Cambiar tarjeta',
               style: TextStyle(
                 color: _isProcessingPayment ? Colors.grey : Colors.white,
               ),
@@ -662,7 +662,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pago'),
+        title: const Text('Procesar pago'),
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -717,7 +717,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                           const SizedBox(height: 32),
                           Text(
-                            'Tarjeta de Pago',
+                            'Información de pago',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
