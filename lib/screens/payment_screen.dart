@@ -28,6 +28,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isLoading = true;
   bool _requiresInvoice = false;
   bool _isProcessingPayment = false;
+  bool _isLoadingFiscalData = false;
   String? _deviceSessionId;
   final ValueNotifier<CardModel?> _selectedCardNotifier = ValueNotifier<CardModel?>(null);
 
@@ -56,6 +57,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (fiscalResponse != null && fiscalResponse['data'] != null) {
         _fiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
       }
+      
+      // Reiniciar switch cada vez que se carga la pantalla
+      _requiresInvoice = false;
+      
       if (_selectedCard == null) {
         try {
           _selectedCard = _cards.firstWhere((card) => card.isFavorite == 1);
@@ -142,9 +147,48 @@ class _PaymentScreenState extends State<PaymentScreen> {
       context,
       MaterialPageRoute(builder: (context) => const EditBillingScreen()),
     );
-    // Recargar datos si volvió de editar información fiscal
+    // Recargar solo los datos fiscales si volvió de editar información fiscal
     if (result == true) {
-      _refreshData();
+      _refreshFiscalData();
+    }
+  }
+
+  Future<void> _refreshFiscalData() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingFiscalData = true;
+    });
+
+    final authService = context.read<AuthService>();
+    final token = await authService.getToken();
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final fiscalResponse = await _apiService.get('/client/fiscal_data', headers: headers);
+      if (fiscalResponse != null && fiscalResponse['data'] != null) {
+        if (mounted) {
+          setState(() {
+            _fiscalData = fiscalResponse['data']['item'] as Map<String, dynamic>;
+            // El switch ya mantiene su estado actual, no se toca
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading fiscal data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar datos fiscales: $e')),
+        );
+      }
+    } finally {
+      // Delay para que el usuario vea el loading
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        setState(() {
+          _isLoadingFiscalData = false;
+        });
+      }
     }
   }
 
@@ -387,6 +431,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!mounted) return;
 
       final body = {
+        'name': _selectedCard!.holderName,
+        'last_name': 'Cliente',
         'token_id': tokenId,
         'device_session_id': _deviceSessionId,
         'use_card_points': null,
@@ -684,7 +730,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             children: [
                               Switch(
                                 value: _requiresInvoice,
-                                onChanged: _isProcessingPayment
+                                onChanged: (_isProcessingPayment || _isLoadingFiscalData)
                                     ? null
                                     : (value) {
                                         setState(() {
@@ -697,7 +743,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               Text(
                                 'Necesito factura',
                                 style: TextStyle(
-                                  color: _isProcessingPayment ? Colors.grey : null,
+                                  color: (_isProcessingPayment || _isLoadingFiscalData) ? Colors.grey : null,
                                 ),
                               ),
                             ],
@@ -715,22 +761,43 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   ),
                                 ),
                                 OutlinedButton.icon(
-                                  onPressed: _isProcessingPayment ? null : _changeFiscalData,
-                                  icon: Icon(
-                                    Icons.edit,
-                                    color: _isProcessingPayment ? Colors.grey : Colors.orange,
-                                  ),
+                                  onPressed: (_isProcessingPayment || _isLoadingFiscalData) ? null : _changeFiscalData,
+                                  icon: _isLoadingFiscalData
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.edit,
+                                          color: (_isProcessingPayment || _isLoadingFiscalData) ? Colors.grey : Colors.orange,
+                                        ),
                                   label: Text(
                                     'Cambiar',
                                     style: TextStyle(
-                                      color: _isProcessingPayment ? Colors.grey : null,
+                                      color: (_isProcessingPayment || _isLoadingFiscalData) ? Colors.grey : null,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
-                            if (_fiscalData != null)
+                            if (_isLoadingFiscalData)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Column(
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 16),
+                                      Text('Cargando información fiscal...'),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else if (_fiscalData != null)
                               Card(
                                 elevation: 0,
                                 color: theme.colorScheme.surface.withAlpha(230),
