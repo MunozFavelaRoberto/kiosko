@@ -262,9 +262,15 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
       appBar: AppBar(
         title: const Text('Editar datos fiscales'),
         elevation: 0,
+        leading: _isLoading 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: null,
+              )
+            : null,
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshData,
+        onRefresh: _isLoading ? () async {} : _refreshData,
         color: colorScheme.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -285,39 +291,48 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _rfcController,
+                  enabled: !_isLoading,
                   decoration: InputDecoration(
                     labelText: 'RFC',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: _isLoading 
+                        ? Colors.grey.withValues(alpha: 0.1) 
+                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
                   validator: _validateRFC,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _razonSocialController,
+                  enabled: !_isLoading,
                   decoration: InputDecoration(
                     labelText: 'Razón Social',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: _isLoading 
+                        ? Colors.grey.withValues(alpha: 0.1) 
+                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
                   validator: _validateRazonSocial,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _codigoPostalController,
+                  enabled: !_isLoading,
                   decoration: InputDecoration(
                     labelText: 'Código Postal',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: _isLoading 
+                        ? Colors.grey.withValues(alpha: 0.1) 
+                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
                   keyboardType: TextInputType.number,
                   validator: _validateCodigoPostal,
@@ -336,6 +351,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                     },
                     builder: (FormFieldState<String> state) {
                       return DropdownMenu<String>(
+                        enabled: !_isLoading,
                         label: const Text('Régimen Fiscal'),
                         initialSelection: _selectedRegimen,
                         dropdownMenuEntries: _regimenes.map((reg) {
@@ -343,12 +359,14 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                           final value = '${reg['code']} - $name';
                           return DropdownMenuEntry(value: value, label: value);
                         }).toList(),
-                        onSelected: (value) {
-                          state.didChange(value);
-                          setState(() {
-                            _selectedRegimen = value;
-                          });
-                        },
+                        onSelected: _isLoading 
+                            ? null 
+                            : (value) {
+                                state.didChange(value);
+                                setState(() {
+                                  _selectedRegimen = value;
+                                });
+                              },
                         width: MediaQuery.of(context).size.width - 32,
                         menuHeight: 200.0,
                         errorText: state.errorText,
@@ -369,6 +387,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                     },
                     builder: (FormFieldState<String> state) {
                       return DropdownMenu<String>(
+                        enabled: !_isLoading,
                         label: const Text('Uso de CFDI'),
                         initialSelection: _selectedUsoCFDI,
                         dropdownMenuEntries: _usosCFDI.map((uso) {
@@ -376,12 +395,14 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                           final value = '${uso['code']} - $name';
                           return DropdownMenuEntry(value: value, label: value);
                         }).toList(),
-                        onSelected: (value) {
-                          state.didChange(value);
-                          setState(() {
-                            _selectedUsoCFDI = value;
-                          });
-                        },
+                        onSelected: _isLoading 
+                            ? null 
+                            : (value) {
+                                state.didChange(value);
+                                setState(() {
+                                  _selectedUsoCFDI = value;
+                                });
+                              },
                         width: MediaQuery.of(context).size.width - 32,
                         menuHeight: 200.0,
                         errorText: state.errorText,
