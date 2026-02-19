@@ -275,7 +275,21 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          child: Form(
+          child: _loadingCatalogs
+              ? const SizedBox(
+                  height: 400,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Cargando datos fiscales...'),
+                      ],
+                    ),
+                  ),
+                )
+              : Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -339,7 +353,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (_loadingCatalogs)
-                  const Center(child: CircularProgressIndicator())
+                  const SizedBox.shrink()
                 else
                   FormField<String>(
                     initialValue: _selectedRegimen,
@@ -375,7 +389,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                   ),
                 const SizedBox(height: 16),
                 if (_loadingCatalogs)
-                  const Center(child: CircularProgressIndicator())
+                  const SizedBox.shrink()
                 else
                   FormField<String>(
                     initialValue: _selectedUsoCFDI,

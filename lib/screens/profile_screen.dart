@@ -55,6 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (!mounted) return;
+      // Delay obligatorio de 1 segundo para mostrar indicador de carga
+      await Future.delayed(const Duration(seconds: 1));
       setState(() {
         _availableBiometrics = normalizedBiometrics;
         _biometricStates = states;
@@ -256,7 +258,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Correo actualizado correctamente')),
+            const SnackBar(
+              content: Text('Correo actualizado correctamente'),
+              backgroundColor: Colors.green,
+            ),
           );
         } else {
           if (!mounted) return;
@@ -336,7 +341,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
 
                   // Si el usuario es null, intentar cargarlo UNA SOLA VEZ
-                  //Solo mostrar indicador de carga si isLoading es true Y user es null
+                  // Solo mostrar indicador de carga si isLoading es true Y user es null
+                  if (_loading) {
+                    // Loading general de la vista - mostrar indicador de carga completo
+                    return const SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Cargando perfil...'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
                   if (provider.user == null) {
                     if (provider.isLoading) {
                       // Está cargando, mostrar indicador
@@ -463,12 +485,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const Divider(height: 32),
-                      if (_loading)
-                        const Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (_availableBiometrics.isEmpty)
+                      if (_availableBiometrics.isEmpty)
                         Card(
                           elevation: 0,
                           color: theme.colorScheme.surface.withAlpha(230),

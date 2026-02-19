@@ -29,6 +29,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   bool _isCvvVisible = false;
   String _detectedBrand = '';
   String _cardNumberHint = '1234 5678 9012 3456';
+  bool _initialLoading = true;
 
   late List<String> _months;
   late List<String> _years;
@@ -41,6 +42,18 @@ class _AddCardScreenState extends State<AddCardScreen> {
     _initializeDates();
     
     _cardNumberController.addListener(_detectCardBrand);
+    
+    // Delay obligatorio de 1 segundo para mostrar indicador de carga inicial
+    _initialLoadDelay();
+  }
+
+  Future<void> _initialLoadDelay() async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      setState(() {
+        _initialLoading = false;
+      });
+    }
   }
 
   void _initializeDates() {
@@ -165,7 +178,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   Future<void> _saveCard() async {
     if (_formKey.currentState!.validate()) {
-      // Deshabilitar todos los campos y botones
       setState(() {
         _isLoading = true;
       });
@@ -186,12 +198,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
       try {
         await _apiService.post('/client/cards', headers: headers, body: body);
         if (mounted) {
-          // Mostrar estado de éxito
           setState(() {
             _showSuccess = true;
           });
           
-          // Esperar un momento para que el usuario vea el éxito
           await Future.delayed(const Duration(milliseconds: 1500));
           
           if (mounted) {
@@ -261,7 +271,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
       ),
       body: Consumer<DataProvider>(
         builder: (context, dataProvider, child) {
-          // Mostrar overlay de "No autorizado" si el usuario es null
           if (dataProvider.user == null) {
             return Center(
               child: Container(
@@ -291,237 +300,250 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Información de la Tarjeta',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _cardNumberController,
-                    decoration: InputDecoration(
-                      labelText: 'Número de Tarjeta',
-                      hintText: _cardNumberHint,
-                      prefixIcon: const Icon(Icons.credit_card),
-                      suffixIcon: _buildCardPrefixIcon(),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+            child: _initialLoading
+                ? const SizedBox(
+                    height: 400,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Cargando formulario de tarjeta...'),
+                        ],
                       ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      _CardNumberFormatter(),
-                    ],
-                    validator: _validateCardNumber,
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _holderNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nombre del Titular',
-                      hintText: 'Como aparece en la tarjeta',
-                      prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                    validator: _validateHolderName,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedMonth,
+                  )
+                : Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Información de la Tarjeta',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _cardNumberController,
                           decoration: InputDecoration(
-                            labelText: 'Mes',
+                            labelText: 'Número de Tarjeta',
+                            hintText: _cardNumberHint,
+                            prefixIcon: const Icon(Icons.credit_card),
+                            suffixIcon: _buildCardPrefixIcon(),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
                             fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                           ),
-                          items: _months.map((month) {
-                            final monthAbbrev = [
-                              'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                              'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-                            ];
-                            final monthIndex = int.parse(month) - 1;
-                            return DropdownMenuItem(
-                              value: month,
-                              child: Text('$month - ${monthAbbrev[monthIndex]}'),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedMonth = value;
-                            });
-                          },
-                          validator: _validateMonth,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            _CardNumberFormatter(),
+                          ],
+                          validator: _validateCardNumber,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedYear,
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _holderNameController,
                           decoration: InputDecoration(
-                            labelText: 'Año',
+                            labelText: 'Nombre del Titular',
+                            hintText: 'Como aparece en la tarjeta',
+                            prefixIcon: const Icon(Icons.person),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
                             fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                           ),
-                          items: _years.map((year) {
-                            return DropdownMenuItem(
-                              value: year,
-                              child: Text(year),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedYear = value;
-                            });
-                          },
-                          validator: _validateYear,
+                          textCapitalization: TextCapitalization.words,
+                          validator: _validateHolderName,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _cvvController,
-                    decoration: InputDecoration(
-                      labelText: 'CVV',
-                      hintText: _detectedBrand == 'amex' ? '1234' : '123',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isCvvVisible ? Icons.visibility_off : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isCvvVisible = !_isCvvVisible;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(_detectedBrand == 'amex' ? 4 : 3),
-                    ],
-                    obscureText: !_isCvvVisible,
-                    validator: _validateCvv,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Switch(
-                        value: _isFavorite,
-                        onChanged: (value) {
-                          setState(() {
-                            _isFavorite = value;
-                          });
-                        },
-                        activeThumbColor: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 20),
+                        Row(
                           children: [
-                            const Text('Establecer como tarjeta principal'),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'Esta tarjeta se usará por defecto en tus pagos',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedMonth,
+                                decoration: InputDecoration(
+                                  labelText: 'Mes',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                 ),
+                                items: _months.map((month) {
+                                  final monthAbbrev = [
+                                    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                                    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                                  ];
+                                  final monthIndex = int.parse(month) - 1;
+                                  return DropdownMenuItem(
+                                    value: month,
+                                    child: Text('$month - ${monthAbbrev[monthIndex]}'),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedMonth = value;
+                                  });
+                                },
+                                validator: _validateMonth,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedYear,
+                                decoration: InputDecoration(
+                                  labelText: 'Año',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                ),
+                                items: _years.map((year) {
+                                  return DropdownMenuItem(
+                                    value: year,
+                                    child: Text(year),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedYear = value;
+                                  });
+                                },
+                                validator: _validateYear,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  // Overlay de procesamiento/éxito
-                  if (_isLoading || _showSuccess)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: _showSuccess 
-                            ? Colors.green.withValues(alpha: 0.1) 
-                            : Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _showSuccess ? Colors.green : Colors.blue,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_showSuccess)
-                            const Icon(Icons.check_circle, color: Colors.green, size: 24)
-                          else
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _cvvController,
+                          decoration: InputDecoration(
+                            labelText: 'CVV',
+                            hintText: _detectedBrand == 'amex' ? '1234' : '123',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isCvvVisible ? Icons.visibility_off : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isCvvVisible = !_isCvvVisible;
+                                });
+                              },
                             ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _showSuccess 
-                                ? '¡Tarjeta agregada exitosamente!' 
-                                : 'Procesando...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: _showSuccess ? Colors.green : Colors.blue,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(_detectedBrand == 'amex' ? 4 : 3),
+                          ],
+                          obscureText: !_isCvvVisible,
+                          validator: _validateCvv,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Switch(
+                              value: _isFavorite,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isFavorite = value;
+                                });
+                              },
+                              activeThumbColor: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Establecer como tarjeta principal'),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      'Esta tarjeta se usará por defecto en tus pagos',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        if (_isLoading || _showSuccess)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: _showSuccess 
+                                  ? Colors.green.withValues(alpha: 0.1) 
+                                  : Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _showSuccess ? Colors.green : Colors.blue,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_showSuccess)
+                                  const Icon(Icons.check_circle, color: Colors.green, size: 24)
+                                else
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _showSuccess 
+                                      ? '¡Tarjeta agregada exitosamente!' 
+                                      : 'Procesando...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: _showSuccess ? Colors.green : Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton(
+                              onPressed: _isLoading ? null : _saveCard,
+                              style: FilledButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
                             ),
                           ),
-                        ],
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _isLoading ? null : _saveCard,
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
-                      ),
+                      ],
                     ),
-                ],
-              ),
-            ),
+                  ),
           );
         },
       ),
@@ -537,22 +559,16 @@ class _CardNumberFormatter extends TextInputFormatter {
     final brand = CardModel.detectBrand(text);
     final isAmex = brand == 'amex';
     
-    // Limitar dígitos según la marca:
-    // - Amex: 15 dígitos (17 caracteres con espacios)
-    // - Otras: 16 dígitos (19 caracteres con espacios)
     final maxDigits = isAmex ? 15 : 16;
     final limitedText = text.length > maxDigits ? text.substring(0, maxDigits) : text;
     
-    // Formatear con espacios
     final buffer = StringBuffer();
     for (int i = 0; i < limitedText.length; i++) {
       if (isAmex) {
-        // Amex: #### ###### #####
         if (i == 4 || i == 10) {
           buffer.write(' ');
         }
       } else {
-        // Visa/Mastercard: #### #### #### ####
         if (i > 0 && i % 4 == 0) {
           buffer.write(' ');
         }

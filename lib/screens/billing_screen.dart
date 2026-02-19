@@ -57,6 +57,8 @@ class _BillingScreenState extends State<BillingScreen> {
     }
 
     if (mounted) {
+      // Delay obligatorio de 1 segundo para mostrar indicador de carga
+      await Future.delayed(const Duration(seconds: 1));
       setState(() => _loading = false);
     }
   }
@@ -113,7 +115,19 @@ class _BillingScreenState extends State<BillingScreen> {
 
                   // Mostrar indicador de carga
                   if (_loading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Cargando facturación...'),
+                          ],
+                        ),
+                      ),
+                    );
                   }
 
                   // Sin datos fiscales

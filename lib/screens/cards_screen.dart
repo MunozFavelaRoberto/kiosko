@@ -68,6 +68,8 @@ class _CardsScreenState extends State<CardsScreen> {
       }
     }
     if (mounted) {
+      // Delay obligatorio de 1 segundo para mostrar indicador de carga
+      await Future.delayed(const Duration(seconds: 1));
       setState(() {
         _isLoading = false;
       });
@@ -99,7 +101,10 @@ class _CardsScreenState extends State<CardsScreen> {
       await _loadCards();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tarjeta establecida como principal')),
+        const SnackBar(
+          content: Text('Tarjeta establecida como principal'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -155,7 +160,10 @@ class _CardsScreenState extends State<CardsScreen> {
       await _loadCards();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tarjeta eliminada exitosamente')),
+        const SnackBar(
+          content: Text('Tarjeta eliminada exitosamente'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -339,10 +347,11 @@ class _CardsScreenState extends State<CardsScreen> {
                     children: [
                       // Indicador de carga para favorito
                       if (_favoriteLoadingCardId == card.id)
-                        const SizedBox(
+                        Container(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
+                          padding: const EdgeInsets.all(2),
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.amber,
                           ),
@@ -358,7 +367,7 @@ class _CardsScreenState extends State<CardsScreen> {
                                 : textColor.withValues(alpha: 0.7),
                             size: 18,
                           ),
-                          onPressed: () => _toggleFavorite(card.id, card),
+                          onPressed: _favoriteLoadingCardId != null ? null : () => _toggleFavorite(card.id, card),
                           tooltip: card.isFavorite == 1 
                               ? 'Principal' 
                               : 'Establecer como principal',
@@ -368,10 +377,11 @@ class _CardsScreenState extends State<CardsScreen> {
                         ),
                       // Indicador de carga para eliminación
                       if (_deleteLoadingCardId == card.id)
-                        const SizedBox(
+                        Container(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
+                          padding: const EdgeInsets.all(2),
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.red,
                           ),
@@ -379,7 +389,7 @@ class _CardsScreenState extends State<CardsScreen> {
                       else
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                          onPressed: () => _deleteCard(card.id, card),
+                          onPressed: _deleteLoadingCardId != null ? null : () => _deleteCard(card.id, card),
                           tooltip: 'Eliminar',
                           color: Colors.white,
                           padding: EdgeInsets.zero,
@@ -466,7 +476,19 @@ class _CardsScreenState extends State<CardsScreen> {
 
                   // Mostrar indicador de carga
                   if (_isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Cargando tarjetas...'),
+                          ],
+                        ),
+                      ),
+                    );
                   }
 
                   // Sin tarjetas
@@ -522,19 +544,41 @@ class _CardsScreenState extends State<CardsScreen> {
                         childAspectRatio = 1.5;
                       }
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          childAspectRatio: childAspectRatio,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                        ),
-                        itemCount: _cards.length,
-                        itemBuilder: (context, index) {
-                          final card = _cards[index];
-                          return _buildCardWidget(card);
-                        },
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: GridView.builder(
+                              padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: childAspectRatio,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                              itemCount: _cards.length,
+                              itemBuilder: (context, index) {
+                                final card = _cards[index];
+                                return _buildCardWidget(card);
+                              },
+                            ),
+                          ),
+                          // Botón de agregar tarjeta - solo visible cuando termina de cargar
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: ElevatedButton.icon(
+                              onPressed: dataProvider.user != null ? _addCard : null,
+                              icon: const Icon(Icons.add),
+                              label: Text(
+                                widget.selectionMode == CardsSelectionMode.select 
+                                    ? 'Agregar Nueva Tarjeta' 
+                                    : 'Agregar Tarjeta',
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 50),
+                              ),
+                            ),
+                          ),
+                        ],
                       );
                     },
                   );
@@ -542,29 +586,6 @@ class _CardsScreenState extends State<CardsScreen> {
               ),
             ),
           ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Consumer<DataProvider>(
-          builder: (context, dataProvider, child) {
-            final isAuthorized = dataProvider.user != null;
-            return ElevatedButton.icon(
-              onPressed: isAuthorized ? _addCard : null,
-              icon: const Icon(Icons.add),
-              label: Text(
-                widget.selectionMode == CardsSelectionMode.select 
-                    ? 'Agregar Nueva Tarjeta' 
-                    : 'Agregar Tarjeta',
-              ),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: isAuthorized 
-                    ? null 
-                    : Colors.grey.shade300,
-              ),
-            );
-          },
         ),
       ),
     );
