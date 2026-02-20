@@ -319,174 +319,185 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Información de la Tarjeta',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _cardNumberController,
-                          decoration: InputDecoration(
-                            labelText: 'Número de Tarjeta',
-                            hintText: _cardNumberHint,
-                            prefixIcon: const Icon(Icons.credit_card),
-                            suffixIcon: _buildCardPrefixIcon(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            _CardNumberFormatter(),
-                          ],
-                          validator: _validateCardNumber,
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _holderNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Nombre del Titular',
-                            hintText: 'Como aparece en la tarjeta',
-                            prefixIcon: const Icon(Icons.person),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: _validateHolderName,
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedMonth,
-                                decoration: InputDecoration(
-                                  labelText: 'Mes',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                        AbsorbPointer(
+                          absorbing: _isLoading,
+                          child: Opacity(
+                            opacity: _isLoading ? 0.5 : 1.0,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Información de la Tarjeta',
+                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
                                   ),
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                 ),
-                                items: _months.map((month) {
-                                  final monthAbbrev = [
-                                    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                                    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-                                  ];
-                                  final monthIndex = int.parse(month) - 1;
-                                  return DropdownMenuItem(
-                                    value: month,
-                                    child: Text('$month - ${monthAbbrev[monthIndex]}'),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedMonth = value;
-                                  });
-                                },
-                                validator: _validateMonth,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedYear,
-                                decoration: InputDecoration(
-                                  labelText: 'Año',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _cardNumberController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Número de Tarjeta',
+                                    hintText: _cardNumberHint,
+                                    prefixIcon: const Icon(Icons.credit_card),
+                                    suffixIcon: _buildCardPrefixIcon(),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                   ),
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    _CardNumberFormatter(),
+                                  ],
+                                  validator: _validateCardNumber,
                                 ),
-                                items: _years.map((year) {
-                                  return DropdownMenuItem(
-                                    value: year,
-                                    child: Text(year),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedYear = value;
-                                  });
-                                },
-                                validator: _validateYear,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _cvvController,
-                          decoration: InputDecoration(
-                            labelText: 'CVV',
-                            hintText: _detectedBrand == 'amex' ? '1234' : '123',
-                            prefixIcon: const Icon(Icons.lock),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isCvvVisible ? Icons.visibility_off : Icons.visibility,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isCvvVisible = !_isCvvVisible;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(_detectedBrand == 'amex' ? 4 : 3),
-                          ],
-                          obscureText: !_isCvvVisible,
-                          validator: _validateCvv,
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Switch(
-                              value: _isFavorite,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isFavorite = value;
-                                });
-                              },
-                              activeThumbColor: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Establecer como tarjeta principal'),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: Text(
-                                      'Esta tarjeta se usará por defecto en tus pagos',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _holderNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Nombre del Titular',
+                                    hintText: 'Como aparece en la tarjeta',
+                                    prefixIcon: const Icon(Icons.person),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  ),
+                                  textCapitalization: TextCapitalization.words,
+                                  validator: _validateHolderName,
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        initialValue: _selectedMonth,
+                                        decoration: InputDecoration(
+                                          labelText: 'Mes',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          filled: true,
+                                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                        ),
+                                        items: _months.map((month) {
+                                          final monthAbbrev = [
+                                            'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                                            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                                          ];
+                                          final monthIndex = int.parse(month) - 1;
+                                          return DropdownMenuItem(
+                                            value: month,
+                                            child: Text('$month - ${monthAbbrev[monthIndex]}'),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedMonth = value;
+                                          });
+                                        },
+                                        validator: _validateMonth,
                                       ),
                                     ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        initialValue: _selectedYear,
+                                        decoration: InputDecoration(
+                                          labelText: 'Año',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          filled: true,
+                                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                        ),
+                                        items: _years.map((year) {
+                                          return DropdownMenuItem(
+                                            value: year,
+                                            child: Text(year),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedYear = value;
+                                          });
+                                        },
+                                        validator: _validateYear,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                TextFormField(
+                                  controller: _cvvController,
+                                  decoration: InputDecoration(
+                                    labelText: 'CVV',
+                                    hintText: _detectedBrand == 'amex' ? '1234' : '123',
+                                    prefixIcon: const Icon(Icons.lock),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _isCvvVisible ? Icons.visibility_off : Icons.visibility,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _isCvvVisible = !_isCvvVisible;
+                                        });
+                                      },
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                   ),
-                                ],
-                              ),
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(_detectedBrand == 'amex' ? 4 : 3),
+                                  ],
+                                  obscureText: !_isCvvVisible,
+                                  validator: _validateCvv,
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Switch(
+                                      value: _isFavorite,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _isFavorite = value;
+                                        });
+                                      },
+                                      activeThumbColor: colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Establecer como tarjeta principal'),
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Text(
+                                              'Esta tarjeta se usará por defecto en tus pagos',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                         if (_isLoading || _showSuccess)
@@ -532,8 +543,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
                             width: double.infinity,
                             height: 56,
                             child: FilledButton(
-                              onPressed: _isLoading ? null : _saveCard,
+                              onPressed: _saveCard,
                               style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

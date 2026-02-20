@@ -1,4 +1,4 @@
-import 'dart:convert';
+ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -293,10 +293,10 @@ class _HomeTabState extends State<HomeTab> {
                         const SizedBox(height: 8),
                         Text(
                           getAmountFormat(amount.toString()),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 32),

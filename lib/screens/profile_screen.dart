@@ -462,103 +462,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const Divider(height: 32),
-                      Card(
-                        elevation: 0,
-                        color: theme.colorScheme.surface.withAlpha(230),
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          leading: Icon(
-                            isDark ? Icons.dark_mode : Icons.light_mode,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: const Text("Modo oscuro"),
-                          trailing: Switch(
-                            value: isDark,
-                            onChanged: (val) async {
-                              final themeProvider = context.read<ThemeProvider>();
-                              await themeProvider.setDark(val);
-                            },
+                      AbsorbPointer(
+                        absorbing: _isUpdatingEmail,
+                        child: Opacity(
+                          opacity: _isUpdatingEmail ? 0.5 : 1.0,
+                          child: Card(
+                            elevation: 0,
+                            color: theme.colorScheme.surface.withAlpha(230),
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              leading: Icon(
+                                isDark ? Icons.dark_mode : Icons.light_mode,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: const Text("Modo oscuro"),
+                              trailing: Switch(
+                                value: isDark,
+                                onChanged: (val) async {
+                                  final themeProvider = context.read<ThemeProvider>();
+                                  await themeProvider.setDark(val);
+                                },
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       const Divider(height: 32),
-                      if (_availableBiometrics.isEmpty)
-                        Card(
-                          elevation: 0,
-                          color: theme.colorScheme.surface.withAlpha(230),
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const ListTile(
-                            leading: Icon(Icons.no_flash, color: Colors.grey),
-                            title: Text("No disponible"),
-                            subtitle: Text("Tu dispositivo no admite biometría"),
-                          ),
-                        )
-                      else
-                        Card(
-                          elevation: 0,
-                          color: theme.colorScheme.surface.withAlpha(230),
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              ..._availableBiometrics.map((biometric) {
-                                final isEnabled = _biometricStates[biometric.displayName] ?? false;
-                                return Column(
-                                  children: [
-                                    ListTile(
-                                      leading: Icon(biometric.icon, color: theme.colorScheme.primary),
-                                      title: Text(biometric.displayName),
-                                      trailing: Switch(
-                                        value: isEnabled,
-                                        onChanged: (val) => _onToggleBiometric(biometric, val),
+                      AbsorbPointer(
+                        absorbing: _isUpdatingEmail,
+                        child: Opacity(
+                          opacity: _isUpdatingEmail ? 0.5 : 1.0,
+                          child: _availableBiometrics.isEmpty
+                              ? Card(
+                                  elevation: 0,
+                                  color: theme.colorScheme.surface.withAlpha(230),
+                                  shape: RoundedRectangleBorder(
+                                    side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const ListTile(
+                                    leading: Icon(Icons.no_flash, color: Colors.grey),
+                                    title: Text("No disponible"),
+                                    subtitle: Text("Tu dispositivo no admite biometría"),
+                                  ),
+                                )
+                              : Card(
+                                  elevation: 0,
+                                  color: theme.colorScheme.surface.withAlpha(230),
+                                  shape: RoundedRectangleBorder(
+                                    side: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      ..._availableBiometrics.map((biometric) {
+                                        final isEnabled = _biometricStates[biometric.displayName] ?? false;
+                                        return Column(
+                                          children: [
+                                            ListTile(
+                                              leading: Icon(biometric.icon, color: theme.colorScheme.primary),
+                                              title: Text(biometric.displayName),
+                                              trailing: Switch(
+                                                value: isEnabled,
+                                                onChanged: (val) => _onToggleBiometric(biometric, val),
+                                              ),
+                                            ),
+                                            if (_availableBiometrics.last != biometric)
+                                              const Divider(height: 1, indent: 72, endIndent: 16),
+                                          ],
+                                        );
+                                      }),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: hasEnabledBiometric
+                                              ? Colors.green.withAlpha(20)
+                                              : Colors.orange.withAlpha(20),
+                                          borderRadius: const BorderRadius.vertical(
+                                            bottom: Radius.circular(12),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              hasEnabledBiometric ? Icons.check_circle : Icons.info,
+                                              size: 18,
+                                              color: hasEnabledBiometric ? Colors.green : Colors.orange,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              hasEnabledBiometric
+                                                  ? "Seguridad activa"
+                                                  : "Sin biometría activada",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: hasEnabledBiometric ? Colors.green.shade700 : Colors.orange.shade700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    if (_availableBiometrics.last != biometric)
-                                      const Divider(height: 1, indent: 72, endIndent: 16),
-                                  ],
-                                );
-                              }),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: hasEnabledBiometric
-                                      ? Colors.green.withAlpha(20)
-                                      : Colors.orange.withAlpha(20),
-                                  borderRadius: const BorderRadius.vertical(
-                                    bottom: Radius.circular(12),
+                                    ],
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      hasEnabledBiometric ? Icons.check_circle : Icons.info,
-                                      size: 18,
-                                      color: hasEnabledBiometric ? Colors.green : Colors.orange,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      hasEnabledBiometric
-                                          ? "Seguridad activa"
-                                          : "Sin biometría activada",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: hasEnabledBiometric ? Colors.green.shade700 : Colors.orange.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
+                      ),
                     ],
                   );
                 },

@@ -36,6 +36,8 @@ class _CardsScreenState extends State<CardsScreen> {
   // Variables para tracking de operaciones por tarjeta
   int? _favoriteLoadingCardId;
   int? _deleteLoadingCardId;
+  // Variable para deshabilitar toda la vista cuando hay operación en proceso
+  bool get _isProcessingCard => _favoriteLoadingCardId != null || _deleteLoadingCardId != null;
   late AuthService _authService;
   final ApiService _apiService = ApiService();
 
@@ -547,26 +549,32 @@ class _CardsScreenState extends State<CardsScreen> {
                       return Column(
                         children: [
                           Expanded(
-                            child: GridView.builder(
-                              padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                childAspectRatio: childAspectRatio,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
+                            child: AbsorbPointer(
+                              absorbing: _isProcessingCard,
+                              child: Opacity(
+                                opacity: _isProcessingCard ? 0.5 : 1.0,
+                                child: GridView.builder(
+                                  padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    childAspectRatio: childAspectRatio,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                  ),
+                                  itemCount: _cards.length,
+                                  itemBuilder: (context, index) {
+                                    final card = _cards[index];
+                                    return _buildCardWidget(card);
+                                  },
+                                ),
                               ),
-                              itemCount: _cards.length,
-                              itemBuilder: (context, index) {
-                                final card = _cards[index];
-                                return _buildCardWidget(card);
-                              },
                             ),
                           ),
                           // Botón de agregar tarjeta - solo visible cuando termina de cargar
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: ElevatedButton.icon(
-                              onPressed: dataProvider.user != null ? _addCard : null,
+                              onPressed: (_isProcessingCard || dataProvider.user == null) ? null : _addCard,
                               icon: const Icon(Icons.add),
                               label: Text(
                                 widget.selectionMode == CardsSelectionMode.select 
@@ -575,6 +583,8 @@ class _CardsScreenState extends State<CardsScreen> {
                               ),
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 50),
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
                               ),
                             ),
                           ),
