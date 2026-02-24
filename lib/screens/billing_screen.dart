@@ -121,7 +121,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(),
+                            CircularProgressIndicator(color: Colors.green),
                             SizedBox(height: 16),
                             Text('Cargando facturación...'),
                           ],

@@ -293,7 +293,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
+                        CircularProgressIndicator(color: Colors.green),
                         SizedBox(height: 16),
                         Text('Cargando datos fiscales...'),
                       ],
@@ -458,9 +458,11 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                           const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.green,
+                              strokeWidth: 2,
+                            ),
                           ),
-                        const SizedBox(width: 12),
                         Text(
                           _showSuccess 
                               ? '¡Datos guardados exitosamente!' 
@@ -477,17 +479,14 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                 else
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       onPressed: _saveBillingInfo,
-                      icon: const Icon(Icons.add),
-                      label: Text(
-                        'Guardar Cambios',
-                      ),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
+                      child: const Text('Guardar cambios'),
                     ),
                   ),
               ],

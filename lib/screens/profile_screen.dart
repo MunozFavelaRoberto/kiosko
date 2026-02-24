@@ -179,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                            child: Text('Cancelar', style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
                           ),
                           const SizedBox(width: 16),
                           ElevatedButton(
@@ -200,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             ),
-                            child: const Text('Guardar', style: TextStyle(fontSize: 16)),
+                            child: Text('Guardar', style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
                           ),
                         ],
                       ),
@@ -365,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(),
+                            CircularProgressIndicator(color: Colors.green),
                             SizedBox(height: 16),
                             Text('Cargando perfil...'),
                           ],
@@ -377,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (provider.user == null) {
                     if (provider.isLoading) {
                       // Está cargando, mostrar indicador
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator(color: Colors.green));
                     }
                     
                     // No está cargando pero user es null - intentar cargar
@@ -385,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         provider.fetchUser();
                       });
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator(color: Colors.green));
                     }
                     
                     // Ya intentamos cargar y sigue siendo null - podría ser error de red
@@ -500,6 +500,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   final themeProvider = context.read<ThemeProvider>();
                                   await themeProvider.setDark(val);
                                 },
+                                activeThumbColor: Colors.green,
+                                activeTrackColor: Colors.green.withValues(alpha: 0.5),
                               ),
                             ),
                           ),
@@ -543,6 +545,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               trailing: Switch(
                                                 value: isEnabled,
                                                 onChanged: (val) => _onToggleBiometric(biometric, val),
+                                                activeThumbColor: Colors.green,
+                                                activeTrackColor: Colors.green.withValues(alpha: 0.5),
                                               ),
                                             ),
                                             if (_availableBiometrics.last != biometric)

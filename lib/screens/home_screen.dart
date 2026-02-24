@@ -26,7 +26,7 @@ class InitialLoadingScreen extends StatelessWidget {
             Image.asset('assets/images/svr_logo.png', height: 80),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
-              color: Colors.white,
+              color: Colors.green,
             ),
             const SizedBox(height: 16),
             Text(
@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(color: Colors.white),
+              const CircularProgressIndicator(color: Colors.green),
               const SizedBox(height: 16),
               const Text(
                 'Cerrando sesión...',
@@ -203,54 +203,67 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMainScreen() {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: Colors.grey.shade700,
-        title: Image.asset('assets/images/svr_logo.png', height: 40),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton.outlined(
-            icon: Icon(
-              Icons.menu, 
-              color: _isAnyTabLoading ? Colors.grey : Colors.white
+    return PopScope(
+      // Bloqueo swipe iOS cuando hay operaciones en progreso
+      canPop: !_isAnyTabLoading,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        key: _scaffoldKey,
+        appBar: AppBar(
+          backgroundColor: Colors.grey.shade700,
+          title: Image.asset('assets/images/svr_logo.png', height: 40),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          actions: [
+            // Bloqueo botón drawer cuando hay operaciones
+            IconButton.outlined(
+              icon: Icon(
+                Icons.menu, 
+                color: _isAnyTabLoading ? Colors.grey : Colors.white
+              ),
+              onPressed: _isAnyTabLoading ? null : () => _scaffoldKey.currentState?.openEndDrawer(),
+              tooltip: 'Menú',
             ),
-            onPressed: _isAnyTabLoading ? null : () => _scaffoldKey.currentState?.openEndDrawer(),
-            tooltip: 'Menú',
+          ],
+        ),
+        endDrawer: const AppDrawer(),
+        // Bloqueo scroll cuando hay operaciones
+        body: AbsorbPointer(
+          absorbing: _isAnyTabLoading,
+          child: Opacity(
+            opacity: _isAnyTabLoading ? 0.5 : 1.0,
+            child: _pages.elementAt(_selectedIndex),
           ),
-        ],
-      ),
-      endDrawer: const AppDrawer(),
-      body: _pages.elementAt(_selectedIndex),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onDestinationSelected,
-        indicatorColor: _isAnyTabLoading ? Colors.grey.shade300 : Colors.grey,
-        destinations: [
-          NavigationDestination(
-            icon: Icon(
-              Icons.home_outlined,
-              color: _isAnyTabLoading ? Colors.grey : null,
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onDestinationSelected,
+          indicatorColor: _isAnyTabLoading ? Colors.grey.shade300 : Colors.grey,
+          destinations: [
+            NavigationDestination(
+              icon: Icon(
+                Icons.home_outlined,
+                color: _isAnyTabLoading ? Colors.grey : null,
+              ),
+              selectedIcon: Icon(
+                Icons.home,
+                color: _isAnyTabLoading ? Colors.grey : null,
+              ),
+              label: 'Inicio',
             ),
-            selectedIcon: Icon(
-              Icons.home,
-              color: _isAnyTabLoading ? Colors.grey : null,
+            NavigationDestination(
+              icon: Icon(
+                Icons.payment_outlined,
+                color: _isAnyTabLoading ? Colors.grey : null,
+              ),
+              selectedIcon: Icon(
+                Icons.payment,
+                color: _isAnyTabLoading ? Colors.grey : null,
+              ),
+              label: 'Pagos',
             ),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(
-              Icons.payment_outlined,
-              color: _isAnyTabLoading ? Colors.grey : null,
-            ),
-            selectedIcon: Icon(
-              Icons.payment,
-              color: _isAnyTabLoading ? Colors.grey : null,
-            ),
-            label: 'Pagos',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -363,7 +376,7 @@ class _HomeTabState extends State<HomeTab> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Estatus:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text('Estatus:', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
                         const SizedBox(height: 8),
                         Text(
                           status,
@@ -374,14 +387,16 @@ class _HomeTabState extends State<HomeTab> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Text('Monto:', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text('Monto:', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
                         const SizedBox(height: 8),
                         Text(
                           getAmountFormat(amount.toString()),
                           style: TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
+                            color: theme.brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -1035,7 +1050,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.green),
             SizedBox(height: 16),
             Text('Cargando documento...'),
           ],

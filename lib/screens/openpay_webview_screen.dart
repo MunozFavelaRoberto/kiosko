@@ -240,9 +240,11 @@ class _OpenPayDeviceSessionScreenState extends State<OpenPayDeviceSessionScreen>
                 const SizedBox(
                   width: 48,
                   height: 48,
-                  child: CircularProgressIndicator(strokeWidth: 3),
+                  child: CircularProgressIndicator(
+                    color: Colors.green,
+                    strokeWidth: 3,
+                  ),
                 ),
-              const SizedBox(height: 24),
               Text(
                 _error ?? 'Procesando...',
                 style: TextStyle(
@@ -494,7 +496,7 @@ class _OpenPayWebViewScreenState extends State<OpenPayWebViewScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_isLoading)
-                const CircularProgressIndicator()
+                const CircularProgressIndicator(color: Colors.green)
               else
                 const Icon(
                   Icons.credit_card,

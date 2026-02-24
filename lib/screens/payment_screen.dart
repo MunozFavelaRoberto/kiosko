@@ -211,7 +211,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 heightFactor: 1.0,
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator(color: Colors.green),
               );
             }
 
@@ -293,10 +293,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     ),
                                     Text(
                                       getAmountFormat(payment.amount.toString()),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: Colors.black,
+                                        color: Theme.of(context).brightness == Brightness.dark 
+                                            ? Colors.white 
+                                            : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -330,7 +332,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+            child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -689,7 +691,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const ClientNumberHeader(),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator(color: Colors.green))
                   : SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
@@ -712,20 +714,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   getAmountFormat(amount.toString()),
                                   style: theme.textTheme.displayMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                    color: theme.brightness == Brightness.dark 
+                                        ? Colors.white 
+                                        : Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
                                   onPressed: _isProcessingPayment ? null : _showPaymentDetails,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.lightBlue,
+                                    backgroundColor: theme.brightness == Brightness.dark 
+                                        ? Colors.lightBlue.shade700 
+                                        : Colors.lightBlue,
                                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                                   ),
                                   child: Text(
                                     'Detalle',
                                     style: TextStyle(
-                                      color: _isProcessingPayment ? Colors.grey : null,
+                                      color: _isProcessingPayment ? Colors.grey : Colors.white,
                                     ),
                                   ),
                                 ),
@@ -754,7 +760,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                           _requiresInvoice = value;
                                         });
                                       },
-                                activeThumbColor: colorScheme.primary,
+                                activeThumbColor: Colors.green,
                               ),
                               const SizedBox(width: 16),
                               Text(
@@ -784,6 +790,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                           width: 16,
                                           height: 16,
                                           child: CircularProgressIndicator(
+                                            color: Colors.green,
                                             strokeWidth: 2,
                                           ),
                                         )
@@ -794,7 +801,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   label: Text(
                                     'Cambiar',
                                     style: TextStyle(
-                                      color: (_isProcessingPayment || _isLoadingFiscalData) ? Colors.grey : null,
+                                      color: (_isProcessingPayment || _isLoadingFiscalData) 
+                                          ? Colors.grey 
+                                          : theme.brightness == Brightness.dark 
+                                              ? Colors.white 
+                                              : Colors.black,
                                     ),
                                   ),
                                 ),
@@ -807,7 +818,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   padding: EdgeInsets.all(24),
                                   child: Column(
                                     children: [
-                                      CircularProgressIndicator(),
+                                      CircularProgressIndicator(color: Colors.green),
                                       SizedBox(height: 16),
                                       Text('Cargando información fiscal...'),
                                     ],
@@ -859,33 +870,35 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               const Center(child: Text('No hay datos fiscales disponibles')),
                             const SizedBox(height: 32),
                           ],
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: FilledButton(
-                              onPressed: _isProcessingPayment ? null : _pay,
-                              style: FilledButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _isProcessingPayment ? null : _pay,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
                                 ),
-                              ),
-                              child: _isProcessingPayment
-                                  ? Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                child: _isProcessingPayment
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        const Text('Procesando...', style: TextStyle(fontSize: 18)),
-                                      ],
-                                    )
-                                  : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 18)),
+                                          const SizedBox(width: 12),
+                                          const Text('Procesando...', style: TextStyle(fontSize: 16)),
+                                        ],
+                                      )
+                                    : const Text('Pagar con tarjeta seleccionada', style: TextStyle(fontSize: 16)),
+                              ),
                             ),
                           ),
                         ],

@@ -204,9 +204,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Campo Email
                       TextField(
                         controller: _userController,
+                        style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
                         decoration: InputDecoration(
                           hintText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
+                          prefixIcon: Icon(Icons.email_outlined, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true,
                           fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -219,12 +221,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _passController,
                         obscureText: _obscurePassword,
+                        style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
-                          prefixIcon: Icon(Icons.lock_outline),
+                          hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
+                          prefixIcon: Icon(Icons.lock_outline, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
                             ),
                             onPressed: () {
                               setState(() {
@@ -251,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? CircularProgressIndicator(color: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white)
+                              ? CircularProgressIndicator(color: Colors.green)
                               : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),

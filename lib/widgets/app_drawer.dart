@@ -77,7 +77,7 @@ class AppDrawer extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(dialogContext, false),
-                              child: const Text("Cancelar"),
+                              child: Text("Cancelar", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(dialogContext, true),

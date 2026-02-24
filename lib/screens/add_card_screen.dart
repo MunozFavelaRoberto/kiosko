@@ -320,7 +320,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(),
+                          CircularProgressIndicator(color: Colors.green),
                           SizedBox(height: 16),
                           Text('Cargando formulario de tarjeta...'),
                         ],
@@ -485,7 +485,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                                           _isFavorite = value;
                                         });
                                       },
-                                      activeThumbColor: colorScheme.primary,
+                                      activeThumbColor: Colors.green,
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
@@ -535,9 +535,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
                                   const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      color: Colors.green,
+                                      strokeWidth: 2,
+                                    ),
                                   ),
-                                const SizedBox(width: 12),
                                 Text(
                                   _showSuccess 
                                       ? '¡Tarjeta agregada exitosamente!' 
