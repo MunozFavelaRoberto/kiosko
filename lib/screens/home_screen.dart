@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final Future<void> _initialDataFuture;
+  bool _isAnyTabLoading = false; // Estado global de bloqueo para ambos tabs
 
   @override
   void initState() {
@@ -69,11 +70,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Vistas para las pestañas principales
   late final List<Widget> _pages = <Widget>[
-    const HomeTab(),
-    const PaymentsTab(),
+    HomeTab(
+      isBlocked: _isAnyTabLoading,
+      onTabBlocked: (blocked) {
+        setState(() {
+          _isAnyTabLoading = blocked;
+        });
+      },
+    ),
+    PaymentsTab(
+      isBlocked: _isAnyTabLoading,
+      onTabBlocked: (blocked) {
+        setState(() {
+          _isAnyTabLoading = blocked;
+        });
+      },
+    ),
   ];
 
   void _onDestinationSelected(int index) {
+    // Bloquear cambio de tab si hay alguna operación en progreso
+    if (_isAnyTabLoading) {
+      return;
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -144,8 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton.outlined(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            icon: Icon(
+              Icons.menu, 
+              color: _isAnyTabLoading ? Colors.grey : Colors.white
+            ),
+            onPressed: _isAnyTabLoading ? null : () => _scaffoldKey.currentState?.openEndDrawer(),
             tooltip: 'Menú',
           ),
         ],
@@ -155,16 +177,28 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
-        indicatorColor: Colors.grey,
-        destinations: const [
+        indicatorColor: _isAnyTabLoading ? Colors.grey.shade300 : Colors.grey,
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: Icon(
+              Icons.home_outlined,
+              color: _isAnyTabLoading ? Colors.grey : null,
+            ),
+            selectedIcon: Icon(
+              Icons.home,
+              color: _isAnyTabLoading ? Colors.grey : null,
+            ),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.payment_outlined),
-            selectedIcon: Icon(Icons.payment),
+            icon: Icon(
+              Icons.payment_outlined,
+              color: _isAnyTabLoading ? Colors.grey : null,
+            ),
+            selectedIcon: Icon(
+              Icons.payment,
+              color: _isAnyTabLoading ? Colors.grey : null,
+            ),
             label: 'Pagos',
           ),
         ],
@@ -174,7 +208,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
+  final bool isBlocked;
+  final Function(bool) onTabBlocked;
+
+  const HomeTab({
+    super.key,
+    required this.isBlocked,
+    required this.onTabBlocked,
+  });
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -190,7 +231,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
     final theme = Theme.of(context);
-    
+
     return RefreshIndicator(
       onRefresh: _refreshData,
       color: theme.colorScheme.primary,
@@ -325,7 +366,14 @@ class _HomeTabState extends State<HomeTab> {
 }
 
 class PaymentsTab extends StatefulWidget {
-  const PaymentsTab({super.key});
+  final bool isBlocked;
+  final Function(bool) onTabBlocked;
+
+  const PaymentsTab({
+    super.key,
+    required this.isBlocked,
+    required this.onTabBlocked,
+  });
 
   @override
   State<PaymentsTab> createState() => _PaymentsTabState();
@@ -360,6 +408,9 @@ class _PaymentsTabState extends State<PaymentsTab> {
     setState(() {
       _loadingDocuments.add('${paymentId}_$fileType');
     });
+    
+    // Notificar al padre que hay una operación en progreso
+    widget.onTabBlocked(true);
     
     final provider = context.read<DataProvider>();
     
@@ -401,6 +452,8 @@ class _PaymentsTabState extends State<PaymentsTab> {
           setState(() {
             _loadingDocuments.remove('${paymentId}_$fileType');
           });
+          // Notificar al padre que la operación terminó
+          widget.onTabBlocked(_loadingDocuments.isNotEmpty);
         }
       });
     } catch (e) {
@@ -408,6 +461,8 @@ class _PaymentsTabState extends State<PaymentsTab> {
       setState(() {
         _loadingDocuments.remove('${paymentId}_$fileType');
       });
+      // Notificar al padre que la operación terminó
+      widget.onTabBlocked(_loadingDocuments.isNotEmpty);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al obtener documento: $e')),
       );
@@ -427,24 +482,12 @@ class _PaymentsTabState extends State<PaymentsTab> {
     final provider = context.watch<DataProvider>();
     final payments = provider.paymentHistory;
     final theme = Theme.of(context);
-    final isBlocked = _isAnyLoading();
+    final isBlocked = widget.isBlocked || _isAnyLoading();
 
     return PopScope(
       canPop: !isBlocked,
       onPopInvokedWithResult: (didPop, result) {},
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back,
-              color: isBlocked
-                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
-                  : null,
-            ),
-            onPressed: isBlocked ? null : () => Navigator.pop(context),
-          ),
-          title: const Text('Mis Pagos'),
-        ),
         body: AbsorbPointer(
           absorbing: isBlocked,
           child: Opacity(
