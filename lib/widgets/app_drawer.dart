@@ -9,8 +9,6 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-
     return Drawer(
       child: Column(
         children: [
@@ -63,40 +61,75 @@ class AppDrawer extends StatelessWidget {
                     "Cerrar Sesión",
                   ),
                   onTap: () async {
-                    // 1. diálogo de confirmación
-                    showDialog(
+                    // 1. Guardar referencias antes del async
+                    final navigator = Navigator.of(context);
+                    final authService = Provider.of<AuthService>(context, listen: false);
+                    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                    final overlayState = Overlay.of(context);
+                    
+                    // 2. Diálogo de confirmación
+                    final shouldLogout = await showDialog<bool>(
                       context: context,
-                      builder: (BuildContext context) {
+                      builder: (BuildContext dialogContext) {
                         return AlertDialog(
                           title: const Text("Cerrar sesión"),
                           content: const Text("¿Estás seguro de que deseas salir?"),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => Navigator.pop(dialogContext, false),
                               child: const Text("Cancelar"),
                             ),
                             TextButton(
-                              onPressed: () async {
-                                // 2. Obtener referencia al DataProvider
-                                final dataProvider = Provider.of<DataProvider>(context, listen: false);
-                                
-                                // 3. Resetear estado de autorización
-                                dataProvider.resetUnauthorized();
-                                
-                                // 4. Borrar estado de login
-                                await authService.logout();
-
-                                if (!context.mounted) return;
-
-                                // 5. Volver al Login eliminando todas las rutas previas
-                                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-                              },
+                              onPressed: () => Navigator.pop(dialogContext, true),
                               child: const Text("Salir", style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         );
                       },
                     );
+                    
+                    if (shouldLogout != true) return;
+                    
+                    // 3. Mostrar diálogo de cierre de sesión usando overlayState
+                    final overlayEntry = OverlayEntry(
+                      builder: (context) => PopScope(
+                        canPop: false,
+                        child: Container(
+                          color: Colors.black54,
+                          child: Center(
+                            child: AlertDialog(
+                              backgroundColor: Colors.grey.shade800,
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(color: Colors.white),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Cerrando sesión...',
+                                    style: TextStyle(color: Colors.white, fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                    
+                    overlayState.insert(overlayEntry);
+                    
+                    // 4. Resetear estado de autorización
+                    dataProvider.resetUnauthorized();
+                    
+                    // 5. Borrar estado de login
+                    await authService.logout();
+
+                    // Delay obligatorio de 1 segundo para mostrar feedback al usuario
+                    await Future.delayed(const Duration(seconds: 1));
+
+                    // 6. Cerrar el diálogo de logout y volver al Login
+                    overlayEntry.remove(); // Cerrar el overlay de "Cerrando sesión..."
+                    navigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
                   },
                 ),
               ],

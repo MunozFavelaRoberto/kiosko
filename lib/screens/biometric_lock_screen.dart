@@ -85,7 +85,12 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   }
 
   Future<void> _forceLogoutAndShowLogin() async {
+    // 1. Cerrar sesión
     await _authService.logout();
+    
+    // Delay obligatorio de 1 segundo para mostrar feedback al usuario
+    await Future.delayed(const Duration(seconds: 1));
+    
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
   }

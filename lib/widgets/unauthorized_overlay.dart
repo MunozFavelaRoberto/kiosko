@@ -74,14 +74,23 @@ class UnauthorizedOverlay extends StatelessWidget {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    // Cerrar sesión y navegar al login
-                    final authService = context.read<AuthService>();
+                    // 1. Guardar referencias antes del async
+                    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+                    final authService = Provider.of<AuthService>(context, listen: false);
+                    final navigator = Navigator.of(context);
+                    
+                    // 2. Resetear estado de autorización
+                    dataProvider.resetUnauthorized();
+                    
+                    // 3. Cerrar sesión
                     await authService.logout();
-                    // Resetear estado de unauthorized
-                    provider.resetUnauthorized();
-                    // Navegar al login
+                    
+                    // Delay obligatorio de 1 segundo para mostrar feedback al usuario
+                    await Future.delayed(const Duration(seconds: 1));
+                    
+                    // 4. Navegar al login
                     if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, AppRoutes.login);
+                      navigator.pushReplacementNamed(AppRoutes.login);
                     }
                   },
                   icon: const Icon(Icons.login),

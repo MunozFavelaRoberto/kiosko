@@ -1,4 +1,4 @@
- import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -77,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isAnyTabLoading = blocked;
         });
       },
+      onLogout: _handleLogout,
     ),
     PaymentsTab(
       isBlocked: _isAnyTabLoading,
@@ -85,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isAnyTabLoading = blocked;
         });
       },
+      onLogout: _handleLogout,
     ),
   ];
 
@@ -96,6 +98,53 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // Función para cerrar sesión con delay y mensaje
+  Future<void> _handleLogout(BuildContext context) async {
+    // Guardar referencias antes del async
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+    
+    // Mostrar indicador de cierre de sesión
+    final navigator = Navigator.of(context);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: Colors.grey.shade800,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Colors.white),
+              const SizedBox(height: 16),
+              const Text(
+                'Cerrando sesión...',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    
+    // Resetear estado de autorización
+    dataProvider.resetUnauthorized();
+    await authService.logout();
+    
+    // Delay obligatorio de 1 segundo
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Cerrar el diálogo primero
+    navigator.pop();
+    
+    // Luego navegar al login
+    if (!context.mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
   }
 
   @override
@@ -210,11 +259,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class HomeTab extends StatefulWidget {
   final bool isBlocked;
   final Function(bool) onTabBlocked;
+  final Function(BuildContext) onLogout;
 
   const HomeTab({
     super.key,
     required this.isBlocked,
     required this.onTabBlocked,
+    required this.onLogout,
   });
 
   @override
@@ -270,14 +321,7 @@ class _HomeTabState extends State<HomeTab> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () async {
-                            final authService = Provider.of<AuthService>(context, listen: false);
-                            final dataProvider = Provider.of<DataProvider>(context, listen: false);
-                            dataProvider.resetUnauthorized();
-                            await authService.logout();
-                            if (!context.mounted) return;
-                            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-                          },
+                          onPressed: () => widget.onLogout(context),
                           child: const Text('Volver al login'),
                         ),
                       ],
@@ -368,11 +412,13 @@ class _HomeTabState extends State<HomeTab> {
 class PaymentsTab extends StatefulWidget {
   final bool isBlocked;
   final Function(bool) onTabBlocked;
+  final Function(BuildContext) onLogout;
 
   const PaymentsTab({
     super.key,
     required this.isBlocked,
     required this.onTabBlocked,
+    required this.onLogout,
   });
 
   @override
@@ -531,14 +577,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () async {
-                            final authService = Provider.of<AuthService>(context, listen: false);
-                            final dataProvider = Provider.of<DataProvider>(context, listen: false);
-                            dataProvider.resetUnauthorized();
-                            await authService.logout();
-                            if (!context.mounted) return;
-                            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-                          },
+                          onPressed: () => widget.onLogout(context),
                           child: const Text('Volver al login'),
                         ),
                       ],
