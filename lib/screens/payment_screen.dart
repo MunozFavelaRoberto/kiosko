@@ -659,12 +659,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final colorScheme = theme.colorScheme;
     final dataProvider = context.watch<DataProvider>();
     final amount = dataProvider.outstandingAmount;
+    final isBlocked = _isProcessingPayment;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Procesar pago'),
-      ),
-      body: RefreshIndicator(
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: isBlocked
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
+                  : null,
+            ),
+            onPressed: isBlocked ? null : () => Navigator.pop(context),
+          ),
+          title: const Text('Procesar pago'),
+        ),
+        body: AbsorbPointer(
+          absorbing: isBlocked,
+          child: Opacity(
+            opacity: isBlocked ? 0.5 : 1.0,
+            child: RefreshIndicator(
         onRefresh: _refreshData,
         color: colorScheme.primary,
         child: Column(
@@ -877,7 +894,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ],
         ),
-      ),
-    );
+      ), // Close RefreshIndicator
+    ), // Close Opacity
+    ), // Close AbsorbPointer
+    ), // Close Scaffold
+    ); // Close PopScope
   }
 }
