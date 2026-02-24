@@ -263,12 +263,25 @@ class _AddCardScreenState extends State<AddCardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isBlocked = _isLoading || _showSuccess;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agregar Tarjeta'),
-        elevation: 0,
-      ),
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: isBlocked
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
+                  : null,
+            ),
+            onPressed: isBlocked ? null : () => Navigator.pop(context),
+          ),
+          title: const Text('Agregar Tarjeta'),
+          elevation: 0,
+        ),
       body: Consumer<DataProvider>(
         builder: (context, dataProvider, child) {
           if (dataProvider.user == null) {
@@ -320,9 +333,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AbsorbPointer(
-                          absorbing: _isLoading,
+                          absorbing: isBlocked,
                           child: Opacity(
-                            opacity: _isLoading ? 0.5 : 1.0,
+                            opacity: isBlocked ? 0.5 : 1.0,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -560,9 +573,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
           );
         },
       ),
-    );
-  }
+    ), // CIERRE DEL POPSCOPE
+  );
 }
+} // CIERRE DE _AddCardScreenState
 
 class _CardNumberFormatter extends TextInputFormatter {
   @override

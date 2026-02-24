@@ -257,19 +257,30 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isBlocked = _isLoading || _showSuccess;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar datos fiscales'),
-        elevation: 0,
-        leading: _isLoading 
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: null,
-              )
-            : null,
-      ),
-      body: RefreshIndicator(
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Editar datos fiscales'),
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: isBlocked
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
+                  : null,
+            ),
+            onPressed: isBlocked ? null : () => Navigator.pop(context),
+          ),
+        ),
+        body: AbsorbPointer(
+          absorbing: isBlocked,
+          child: Opacity(
+            opacity: isBlocked ? 0.5 : 1.0,
+            child: RefreshIndicator(
         onRefresh: _isLoading ? () async {} : _refreshData,
         color: colorScheme.primary,
         child: SingleChildScrollView(
@@ -464,24 +475,29 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                     ),
                   )
                 else
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton(
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ElevatedButton.icon(
                       onPressed: _saveBillingInfo,
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        'Guardar Cambios',
                       ),
-                      child: const Text('Guardar Cambios', style: TextStyle(fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
         ),
-      ),
-    );
+      ), // CIERRE DE OPACITY
+    ), // CIERRE DE ABSORBPOINTER
+    ), // CIERRE DEL BODY
+    ), // CIERRE DEL SCAFFOLD
+    ); // CIERRE DEL POPSCOPE
   }
 }

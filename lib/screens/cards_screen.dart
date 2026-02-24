@@ -425,14 +425,27 @@ class _CardsScreenState extends State<CardsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isBlocked = _isProcessingCard;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.selectionMode == CardsSelectionMode.select 
-            ? 'Seleccionar Tarjeta' 
-            : 'Tarjetas'),
-        elevation: 4,
-      ),
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: isBlocked
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
+                  : null,
+            ),
+            onPressed: isBlocked ? null : () => Navigator.pop(context),
+          ),
+          title: Text(widget.selectionMode == CardsSelectionMode.select 
+              ? 'Seleccionar Tarjeta' 
+              : 'Tarjetas'),
+          elevation: 4,
+        ),
       body: RefreshIndicator(
         onRefresh: _refreshCards,
         color: theme.colorScheme.primary,
@@ -598,6 +611,7 @@ class _CardsScreenState extends State<CardsScreen> {
           ],
         ),
       ),
-    );
-  }
+    ), // CIERRE DEL POPSCOPE
+  );
+}
 }

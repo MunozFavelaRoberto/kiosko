@@ -427,8 +427,29 @@ class _PaymentsTabState extends State<PaymentsTab> {
     final provider = context.watch<DataProvider>();
     final payments = provider.paymentHistory;
     final theme = Theme.of(context);
+    final isBlocked = _isAnyLoading();
 
-    return RefreshIndicator(
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: isBlocked
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3)
+                  : null,
+            ),
+            onPressed: isBlocked ? null : () => Navigator.pop(context),
+          ),
+          title: const Text('Mis Pagos'),
+        ),
+        body: AbsorbPointer(
+          absorbing: isBlocked,
+          child: Opacity(
+            opacity: isBlocked ? 0.5 : 1.0,
+            child: RefreshIndicator(
       onRefresh: _refreshData,
       color: theme.colorScheme.primary,
       child: Column(
@@ -826,7 +847,11 @@ class _PaymentsTabState extends State<PaymentsTab> {
           ),
         ],
       ),
-    );
+    ), // Close RefreshIndicator
+    ), // Close Opacity
+    ), // Close AbsorbPointer
+    ), // Close Scaffold
+    ); // Close PopScope
   }
 }
 

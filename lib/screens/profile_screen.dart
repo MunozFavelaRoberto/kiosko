@@ -295,14 +295,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final hasEnabledBiometric = _biometricStates.values.any((v) => v);
     final isDark = context.select<ThemeProvider, bool>((p) => p.isDark);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi perfil'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        color: theme.colorScheme.primary,
-        child: Column(
+    return PopScope(
+      canPop: !_isUpdatingEmail,
+      onPopInvokedWithResult: (didPop, result) {
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: _isUpdatingEmail 
+                  ? Theme.of(context).iconTheme.color?.withValues(alpha: 0.3) 
+                  : null,
+            ),
+            onPressed: _isUpdatingEmail ? null : () => Navigator.pop(context),
+          ),
+          title: const Text('Mi perfil'),
+        ),
+        body: AbsorbPointer(
+        absorbing: _isUpdatingEmail,
+        child: RefreshIndicator(
+          onRefresh: _isUpdatingEmail ? () async {} : _refreshData,
+          color: theme.colorScheme.primary,
+          child: Column(
           children: [
             const ClientNumberHeader(),
             Expanded(
@@ -577,7 +592,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      ),
-    );
+      ), // closes RefreshIndicator
+      ), // closes AbsorbPointer
+      ), // closes Scaffold
+    ); // closes PopScope
   }
 }
