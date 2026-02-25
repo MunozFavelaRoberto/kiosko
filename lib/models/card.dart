@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CardModel {
+  static const Map<String, String> _brandLogosAsset = {
+    'visa': 'assets/images/Visa_Inc._logo.svg',
+    'mastercard': 'assets/images/Mastercard-logo.svg', 
+    'amex': 'assets/images/American_Express_logo.svg',
+    'discover': 'assets/images/discover.png',
+  };
+
+  // Tamaños logos de tarjetas
+  static const double logoHeightSmall = 24;
+  static const double logoWidthSmall = 36;
+  static const double logoHeightMedium = 30;
+  static const double logoWidthMedium = 45;
   final int id;
   final String cardId;
   final int isFavorite;
@@ -172,13 +185,70 @@ class CardModel {
   /// Obtener la ruta del logo de la marca (asset local)
   /// Retorna la ruta del asset o cadena vacía si no existe
   static String getBrandLogo(String brand) {
-    final logos = {
-      'visa': 'assets/images/Visa_Inc._logo.svg',
-      'mastercard': 'assets/images/Mastercard-logo.svg',
-      'amex': 'assets/images/American_Express_logo.svg',
-      'discover': 'assets/images/discover.png',
-    };
-    return logos[brand.toLowerCase()] ?? '';
+    return _brandLogosAsset[brand.toLowerCase()] ?? '';
+  }
+
+  /// Construir widget de logo de la marca usando assets locales
+  /// Retorna el logo en formato SVG o PNG según el asset disponible
+  static Widget buildBrandLogo({
+    required String brand,
+    required double height,
+    required double width,
+    Color? textColor,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    final brandLower = brand.toLowerCase();
+    final assetPath = _brandLogosAsset[brandLower] ?? '';
+
+    if (assetPath.isEmpty) {
+      // No hay logo disponible - mostrar texto
+      return Text(
+        brand.toUpperCase(),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: textColor ?? Colors.black,
+        ),
+      );
+    }
+
+    // Determinar si es PNG o SVG
+    if (assetPath.endsWith('.png')) {
+      return Image.asset(
+        assetPath,
+        height: height,
+        width: width,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          return Text(
+            brand.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: textColor ?? Colors.black,
+            ),
+          );
+        },
+      );
+    } else {
+      return SvgPicture.asset(
+        assetPath,
+        height: height,
+        width: width,
+        fit: fit,
+        // No mostrar placeholder - mostrar solo la imagen o nada
+        errorBuilder: (context, error, stackTrace) {
+          return Text(
+            brand.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: textColor ?? Colors.black,
+            ),
+          );
+        },
+      );
+    }
   }
 
   /// Verificar si la tarjeta está expirada
@@ -208,3 +278,4 @@ class CardModel {
     return cardNumber;
   }
 }
+

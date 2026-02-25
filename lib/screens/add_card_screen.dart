@@ -6,7 +6,6 @@ import 'package:kiosko/services/auth_service.dart';
 import 'package:kiosko/utils/error_helper.dart';
 import 'package:kiosko/services/data_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class AddCardScreen extends StatefulWidget {
   const AddCardScreen({super.key});
@@ -226,37 +225,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   Widget _buildCardPrefixIcon() {
-    final logoPath = CardModel.getBrandLogo(_detectedBrand);
-    
-    if (logoPath.isEmpty) {
-      return const Icon(Icons.credit_card);
-    }
-    
-    if (logoPath.endsWith('.png')) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        child: Image.asset(
-          logoPath,
-          height: 24,
-          width: 36,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.credit_card);
-          },
-        ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        child: SvgPicture.asset(
-          logoPath,
-          height: 24,
-          width: 36,
-          fit: BoxFit.contain,
-          placeholderBuilder: (context) => const Icon(Icons.credit_card),
-        ),
-      );
-    }
+    return CardModel.buildBrandLogo(
+      brand: _detectedBrand,
+      height: CardModel.logoHeightSmall,
+      width: CardModel.logoWidthSmall,
+    );
   }
 
   @override

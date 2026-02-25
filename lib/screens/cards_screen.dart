@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:kiosko/widgets/client_number_header.dart';
 import 'package:kiosko/screens/add_card_screen.dart';
@@ -193,7 +192,6 @@ class _CardsScreenState extends State<CardsScreen> {
   }
 
   Widget _buildCardWidget(CardModel card) {
-    final logoPath = CardModel.getBrandLogo(card.brand);
     final colors = CardModel.getBrandColors(card.brand);
     final isDarkColor = card.brand.toLowerCase() != 'unknown';
     final textColor = isDarkColor ? Colors.white : Colors.black;
@@ -205,55 +203,6 @@ class _CardsScreenState extends State<CardsScreen> {
       stops: const [0.2, 1.0],
     );
 
-    // Función helper para mostrar el logo desde assets
-    Widget buildLogo() {
-      if (logoPath.isEmpty) {
-        return Text(
-          card.brand.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        );
-      }
-      
-      // Determinar si es PNG o SVG
-      if (logoPath.endsWith('.png')) {
-        return Image.asset(
-          logoPath,
-          height: 30,
-          width: 45,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Text(
-              card.brand.toUpperCase(),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            );
-          },
-        );
-      } else {
-        return SvgPicture.asset(
-          logoPath,
-          height: 30,
-          width: 45,
-          fit: BoxFit.contain,
-          placeholderBuilder: (context) => Text(
-            card.brand.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-        );
-      }
-    }
-    
     return Container(
       width: double.infinity,
       height: 200,
@@ -273,7 +222,12 @@ class _CardsScreenState extends State<CardsScreen> {
           Positioned(
             top: 12,
             right: 12,
-            child: buildLogo(),
+            child: CardModel.buildBrandLogo(
+              brand: card.brand,
+              height: CardModel.logoHeightMedium,
+              width: CardModel.logoWidthMedium,
+              textColor: textColor,
+            ),
           ),
           Positioned(
             left: 16,
