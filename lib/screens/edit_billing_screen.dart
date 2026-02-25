@@ -282,7 +282,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
             opacity: isBlocked ? 0.5 : 1.0,
             child: RefreshIndicator(
         onRefresh: _isLoading ? () async {} : _refreshData,
-        color: colorScheme.primary,
+        color: Colors.green,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -477,8 +477,8 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                     ),
                   )
                 else
-                  Padding(
-                    padding: const EdgeInsets.all(16),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: double.infinity),
                     child: ElevatedButton(
                       onPressed: _saveBillingInfo,
                       style: ElevatedButton.styleFrom(
@@ -486,7 +486,7 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Guardar cambios'),
+                      child: const Text('Guardar cambios', style: TextStyle(fontSize: 16)),
                     ),
                   ),
               ],

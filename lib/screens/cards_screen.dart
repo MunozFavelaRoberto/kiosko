@@ -424,7 +424,6 @@ class _CardsScreenState extends State<CardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isBlocked = _isProcessingCard;
 
     return PopScope(
@@ -448,7 +447,7 @@ class _CardsScreenState extends State<CardsScreen> {
         ),
       body: RefreshIndicator(
         onRefresh: _refreshCards,
-        color: theme.colorScheme.primary,
+        color: Colors.green,
         child: Column(
           children: [
             const ClientNumberHeader(),

@@ -298,7 +298,7 @@ class _HomeTabState extends State<HomeTab> {
 
     return RefreshIndicator(
       onRefresh: _refreshData,
-      color: theme.colorScheme.primary,
+      color: Colors.green,
       child: Column(
         children: [
           const ClientNumberHeader(),
@@ -542,7 +542,6 @@ class _PaymentsTabState extends State<PaymentsTab> {
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
     final payments = provider.paymentHistory;
-    final theme = Theme.of(context);
     final isBlocked = widget.isBlocked || _isAnyLoading();
 
     return PopScope(
@@ -555,7 +554,7 @@ class _PaymentsTabState extends State<PaymentsTab> {
             opacity: isBlocked ? 0.5 : 1.0,
             child: RefreshIndicator(
       onRefresh: _refreshData,
-      color: theme.colorScheme.primary,
+      color: Colors.green,
       child: Column(
         children: [
           const ClientNumberHeader(),

@@ -554,19 +554,17 @@ class _AddCardScreenState extends State<AddCardScreen> {
                             ),
                           )
                         else
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: FilledButton(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: double.infinity),
+                            child: ElevatedButton.icon(
                               onPressed: _saveCard,
-                              style: FilledButton.styleFrom(
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar Tarjeta'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 50),
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
                               ),
-                              child: const Text('Agregar Tarjeta', style: TextStyle(fontSize: 16)),
                             ),
                           ),
                       ],

@@ -685,7 +685,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             opacity: isBlocked ? 0.5 : 1.0,
             child: RefreshIndicator(
         onRefresh: _refreshData,
-        color: colorScheme.primary,
+        color: Colors.green,
         child: Column(
           children: [
             const ClientNumberHeader(),

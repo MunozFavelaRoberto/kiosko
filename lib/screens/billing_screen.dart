@@ -70,7 +70,6 @@ class _BillingScreenState extends State<BillingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +77,7 @@ class _BillingScreenState extends State<BillingScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: colorScheme.primary,
+        color: Colors.green,
         child: Column(
           children: [
             const ClientNumberHeader(),

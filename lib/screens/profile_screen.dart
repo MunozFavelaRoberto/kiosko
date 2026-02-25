@@ -316,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         absorbing: _isUpdatingEmail,
         child: RefreshIndicator(
           onRefresh: _isUpdatingEmail ? () async {} : _refreshData,
-          color: theme.colorScheme.primary,
+          color: Colors.green,
           child: Column(
           children: [
             const ClientNumberHeader(),
