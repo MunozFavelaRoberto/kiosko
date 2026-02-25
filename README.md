@@ -17,4 +17,4 @@ samples, guidance on mobile development, and a full API reference.
 
 # Prod
 Para cambiar el nombre de la aplicación:
-flutter pub run change_app_package_name:main com.robertofavela.pagodigital
+flutter pub run change_app_package_name:main com.robertofavela.digitalpay
