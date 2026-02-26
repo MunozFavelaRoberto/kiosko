@@ -285,6 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Correo',
                                   hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
                                   prefixIcon: Icon(Icons.email_outlined, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                                  errorStyle: const TextStyle(color: Color(0xFFCF6679)),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -295,6 +296,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(color: colorScheme.primary),
+                                  ),
+                                  errorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Color(0xFFCF6679)),
+                                  ),
+                                  focusedErrorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Color(0xFFCF6679)),
                                   ),
                                   filled: true,
                                   fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -331,6 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       });
                                     },
                                   ),
+                                  errorStyle: const TextStyle(color: Color(0xFFCF6679)),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -341,6 +351,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(color: colorScheme.primary),
+                                  ),
+                                  errorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Color(0xFFCF6679)),
+                                  ),
+                                  focusedErrorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Color(0xFFCF6679)),
                                   ),
                                   filled: true,
                                   fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
