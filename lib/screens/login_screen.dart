@@ -16,9 +16,16 @@ class _LoginScreenState extends State<LoginScreen> {
   // Instancia de autenticación
   late final AuthService _authService;
 
+  // Form key para validación
+  final _formKey = GlobalKey<FormState>();
+
   // Controladores para capturar texto de los campos
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
+  
+  // Focus nodes para detectar cuando el campo pierde el foco
+  final FocusNode _userFocusNode = FocusNode();
+  final FocusNode _passFocusNode = FocusNode();
 
   // Variable indicador de carga
   bool _isLoading = false;
@@ -26,11 +33,49 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   List<BiometricTypeInfo> _enabledBiometrics = [];
 
+  // Validación de usuario
+  String? _validateUser(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Ingrese su correo';
+    }
+    return null;
+  }
+
+  // Validación de contraseña
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Ingrese su contraseña';
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passController.dispose();
+    _userFocusNode.dispose();
+    _passFocusNode.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
     _authService = Provider.of<AuthService>(context, listen: false);
     _initBiometricVisibility();
+    
+    // Agregar listeners para detectar cuando el campo pierde el foco
+    _userFocusNode.addListener(() {
+      if (!_userFocusNode.hasFocus && _userController.text.trim().isEmpty) {
+        _formKey.currentState?.validate();
+      }
+    });
+    
+    _passFocusNode.addListener(() {
+      if (!_passFocusNode.hasFocus && _passController.text.trim().isEmpty) {
+        _formKey.currentState?.validate();
+      }
+    });
   }
   
   // Función que centraliza el éxito del login
@@ -50,6 +95,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Login por botón
   void _loginWithPassword() async {
+    // Validar el formulario
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
     setState(() => _isLoading = true);
     final email = _userController.text.trim();
     final pass = _passController.text.trim();
@@ -67,13 +117,19 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Credenciales incorrectas')),
+          const SnackBar(
+            content: Text('Credenciales incorrectas'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, completa todos los campos')),
+        const SnackBar(
+          content: Text('Por favor, completa todos los campos'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
     if (mounted) {
@@ -91,7 +147,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!isEnabled) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esta biometría ha sido deshabilitada')),
+        const SnackBar(
+          content: Text('Esta biometría ha sido deshabilitada'),
+          backgroundColor: Colors.green,
+        ),
       );
       if (mounted) {
         setState(() => _isLoading = false);
@@ -119,14 +178,20 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sesión expirada. Por favor inicia sesión con email y contraseña.')),
+            const SnackBar(
+              content: Text('Sesión expirada. Por favor inicia sesión con email y contraseña.'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       }
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Autenticación con ${biometric.displayName} fallida')),
+        SnackBar(
+          content: Text('Autenticación con ${biometric.displayName} fallida'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
 
@@ -180,142 +245,192 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final Color blueish = Color.lerp(colorScheme.primary, Colors.lightBlueAccent, 0.7) ?? colorScheme.primary;
+    final isBlocked = _isLoading;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(30.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Image.asset('assets/images/cmapa_logo.png', height: 100, width: 100),
-                      const SizedBox(height: 40),
+    return PopScope(
+      canPop: !isBlocked,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(30.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          Image.asset('assets/images/cmapa_logo.png', height: 100, width: 100),
+                          const SizedBox(height: 40),
 
-                      // Campo Email
-                      TextField(
-                        controller: _userController,
-                        style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
-                        decoration: InputDecoration(
-                          hintText: 'Email',
-                          hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
-                          prefixIcon: Icon(Icons.email_outlined, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Campo Contraseña
-                      TextField(
-                        controller: _passController,
-                        obscureText: _obscurePassword,
-                        style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
-                        decoration: InputDecoration(
-                          hintText: 'Contraseña',
-                          hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
-                          prefixIcon: Icon(Icons.lock_outline, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
+                          // Campo Email
+                          AbsorbPointer(
+                            absorbing: isBlocked,
+                            child: Opacity(
+                              opacity: isBlocked ? 0.5 : 1.0,
+                              child: TextFormField(
+                                controller: _userController,
+                                focusNode: _userFocusNode,
+                                style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'Correo',
+                                  hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
+                                  prefixIcon: Icon(Icons.email_outlined, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.grey),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: colorScheme.primary),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                validator: _validateUser,
+                              ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
                           ),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
+                          const SizedBox(height: 20),
 
-                      // Botón Ingresar
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _loginWithPassword,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          // Campo Contraseña
+                          AbsorbPointer(
+                            absorbing: isBlocked,
+                            child: Opacity(
+                              opacity: isBlocked ? 0.5 : 1.0,
+                              child: TextFormField(
+                                controller: _passController,
+                                focusNode: _passFocusNode,
+                                obscureText: _obscurePassword,
+                                style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'Contraseña',
+                                  hintStyle: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black54),
+                                  prefixIcon: Icon(Icons.lock_outline, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                      color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
+                                    ),
+                                    onPressed: isBlocked ? null : () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Colors.grey),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: colorScheme.primary),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                ),
+                                validator: _validatePassword,
+                              ),
+                            ),
                           ),
-                          child: _isLoading
-                              ? CircularProgressIndicator(color: Colors.green)
-                              : Text("INICIAR SESIÓN", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
-                        ),
+                          const SizedBox(height: 30),
+
+                          // Botón Ingresar
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _loginWithPassword,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: _isLoading
+                                  ? CircularProgressIndicator(color: Colors.green)
+                                  : Text("Iniciar sesión", style: theme.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                
-                // Mostrar bloque biométrico completo sólo si corresponde
-                if (_showBiometricButton) ...[
-                  const SizedBox(height: 40),
+                  
+                  // Mostrar bloque biométrico completo sólo si corresponde
+                  if (_showBiometricButton) ...[
+                    const SizedBox(height: 40),
 
-                  // Divisor visual
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text("O ingresa con", style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha((0.7 * 255).round()))),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
+                    // Divisor visual
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text("O ingresa con", style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha((0.7 * 255).round()))),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Botón Biométrico dinámico (muestra los métodos habilitados)
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: _enabledBiometrics.map((biometric) {
-                      return GestureDetector(
-                        onTap: _isLoading ? null : () => _loginWithBiometrics(biometric),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                          decoration: BoxDecoration(
-                            color: blueish.withAlpha((0.08 * 255).round()),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(biometric.icon, size: 40, color: blueish),
-                              const SizedBox(height: 6),
-                              Text(
-                                biometric.displayName,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: blueish, 
-                                  fontWeight: FontWeight.w600
+                    // Botón Biométrico dinámico (muestra los métodos habilitados)
+                    AbsorbPointer(
+                      absorbing: isBlocked,
+                      child: Opacity(
+                        opacity: isBlocked ? 0.5 : 1.0,
+                        child: Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.center,
+                          children: _enabledBiometrics.map((biometric) {
+                            return GestureDetector(
+                              onTap: _isLoading ? null : () => _loginWithBiometrics(biometric),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                                decoration: BoxDecoration(
+                                  color: blueish.withAlpha((0.08 * 255).round()),
+                                  borderRadius: BorderRadius.circular(15),
+                                  border: Border.all(color: blueish.withAlpha((0.5 * 255).round())),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(biometric.icon, size: 40, color: blueish),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      biometric.displayName,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: blueish, 
+                                        fontWeight: FontWeight.w600
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
