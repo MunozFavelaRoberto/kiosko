@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Column(
                     children: [
-                      Image.asset('assets/images/svr_logo.png', height: 100, width: 100),
+                      Image.asset('assets/images/cmapa_logo.png', height: 100, width: 100),
                       const SizedBox(height: 40),
 
                       // Campo Email
@@ -251,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _loginWithPassword,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: blueish,
+                            backgroundColor: Colors.blue,
                             foregroundColor: (blueish.computeLuminance() > 0.6) ? Colors.black : Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),

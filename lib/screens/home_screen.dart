@@ -23,7 +23,7 @@ class InitialLoadingScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/svr_logo.png', height: 80),
+            Image.asset('assets/images/cmapa_logo.png', height: 80),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
               color: Colors.green,
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         key: _scaffoldKey,
         appBar: AppBar(
           backgroundColor: Colors.grey.shade700,
-          title: Image.asset('assets/images/svr_logo.png', height: 40),
+          title: Image.asset('assets/images/cmapa_logo.png', height: 40),
           centerTitle: true,
           automaticallyImplyLeading: false,
           actions: [

@@ -20,7 +20,7 @@ class AppDrawer extends StatelessWidget {
             ),
             child: Center(
               child: Image.asset(
-                'assets/images/svr_logo.png',
+                'assets/images/cmapa_logo.png',
                 width: 80,
                 fit: BoxFit.contain,
               ),
