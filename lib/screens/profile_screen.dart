@@ -10,7 +10,7 @@ import 'package:kiosko/models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
+ 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -199,8 +199,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
                             ),
-                            child: Text('Guardar', style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
+                            child: const Text('Guardar', style: TextStyle(fontSize: 16)),
                           ),
                         ],
                       ),

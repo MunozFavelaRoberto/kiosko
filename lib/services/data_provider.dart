@@ -2,8 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kiosko/models/category.dart';
-import 'package:kiosko/models/service.dart';
 import 'package:kiosko/models/payment.dart';
 import 'package:kiosko/models/payment_history.dart';
 import 'package:kiosko/models/payment_response.dart';
@@ -25,8 +23,6 @@ class DataProvider extends ChangeNotifier {
     _loadCachedUser();
   }
 
-  List<Category> _categories = [];
-  List<Service> _services = [];
   List<Payment> _payments = [];
   List<PaymentHistory> _paymentHistory = [];
   User? _user;
@@ -36,8 +32,6 @@ class DataProvider extends ChangeNotifier {
   bool _isInitialLoading = true;
   bool _hasAttemptedFetch = false; // Track si ya intentamos obtener datos
 
-  List<Category> get categories => _categories;
-  List<Service> get services => _services;
   List<Payment> get payments => _payments;
   List<PaymentHistory> get paymentHistory => _paymentHistory;
   User? get user => _user;
@@ -85,32 +79,6 @@ class DataProvider extends ChangeNotifier {
       debugPrint('Cache de usuario limpiada');
     } catch (e) {
       debugPrint('Error limpiando cache: $e');
-    }
-  }
-
-  Future<void> fetchCategories() async {
-    _isLoading = true;
-
-    try {
-      final data = await _apiService.get('/categories');
-      _categories = (data as List<dynamic>).map((json) => Category.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error fetching categories: $e');
-    } finally {
-      _isLoading = false;
-    }
-  }
-
-  Future<void> fetchServices() async {
-    _isLoading = true;
-
-    try {
-      final data = await _apiService.get('/services');
-      _services = (data as List<dynamic>).map((json) => Service.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error fetching services: $e');
-    } finally {
-      _isLoading = false;
     }
   }
 
@@ -283,11 +251,6 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // Método para obtener servicios por categoría
-  List<Service> getServicesByCategory(int categoryId) {
-    return _services.where((service) => service.categoryId == categoryId).toList();
-  }
-
   // Método para actualizar el usuario
   void updateUser(User newUser) {
     _user = newUser;
@@ -363,8 +326,6 @@ class DataProvider extends ChangeNotifier {
       fetchUser(),
       fetchOutstandingPayments(),
       fetchPaymentHistory(),
-      fetchCategories(),
-      fetchServices(),
     ]);
     
     // Solo hacer notifyListeners() después de que todo termine

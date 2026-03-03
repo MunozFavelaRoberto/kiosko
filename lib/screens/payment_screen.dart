@@ -331,7 +331,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'Cerrar',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black,
+              ),
+            ),
           ),
         ],
       ),
