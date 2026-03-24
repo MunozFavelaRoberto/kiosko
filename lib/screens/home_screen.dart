@@ -136,13 +136,12 @@ class _HomeScreenState extends State<HomeScreen> {
     dataProvider.resetUnauthorized();
     await authService.logout();
     
-    // Delay obligatorio de 1 segundo
     await Future.delayed(const Duration(seconds: 1));
     
     // Cerrar el diálogo primero
     navigator.pop();
     
-    // Luego navegar al login
+    // Navegar al login
     if (!context.mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
   }
@@ -157,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return const InitialLoadingScreen();
         }
 
-        // Si hay error, mostrar pantalla de error
+        // Mostrar pantalla de error
         if (snapshot.hasError) {
           return Scaffold(
             backgroundColor: Colors.grey.shade700,
@@ -943,11 +942,11 @@ class _PaymentsTabState extends State<PaymentsTab> {
           ),
         ],
       ),
-    ), // Close RefreshIndicator
-    ), // Close Opacity
-    ), // Close AbsorbPointer
-    ), // Close Scaffold
-    ); // Close PopScope
+    ),
+    ),
+    ),
+    ),
+    );
   }
 }
 

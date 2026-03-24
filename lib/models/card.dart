@@ -76,9 +76,7 @@ class CardModel {
     };
   }
 
-  // Métodos de utilidad para la UI
-
-  /// Detectar la marca de la tarjeta basándose en el número
+  // Detectar la marca de la tarjeta basándose en el número
   static String detectBrand(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '').replaceAll('-', '');
     
@@ -97,7 +95,7 @@ class CardModel {
     return 'unknown';
   }
 
-  /// Validar número de tarjeta con algoritmo de Luhn
+  // Validar número de tarjeta con algoritmo de Luhn
   static bool validateLuhn(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '').replaceAll('-', '');
     if (cleanNumber.isEmpty) return false;
@@ -118,17 +116,17 @@ class CardModel {
     return sum % 10 == 0;
   }
 
-  /// Obtener la longitud esperada del CVV según la marca
+  // Obtener la longitud esperada del CVV según la marca
   static int getCvvLength(String brand) {
     return brand.toLowerCase() == 'amex' ? 4 : 3;
   }
 
-  /// Obtener la longitud esperada del número según la marca
+  // Obtener la longitud esperada del número según la marca
   static int getCardNumberLength(String brand) {
     return brand.toLowerCase() == 'amex' ? 15 : 16;
   }
 
-  /// Formatear el número de tarjeta según la marca
+  // Formatear el número de tarjeta según la marca
   static String formatCardNumber(String cardNumber, [String brand = '']) {
     final cleanNumber = cardNumber.replaceAll(' ', '').replaceAll('-', '');
     final detectedBrand = brand.isNotEmpty ? brand : detectBrand(cleanNumber);
@@ -150,7 +148,7 @@ class CardModel {
     }
   }
 
-  /// Obtener el color del gradiente según la marca
+  // Obtener el color del gradiente según la marca
   static Map<String, Color> getBrandColors(String brand) {
     final brandLower = brand.toLowerCase();
     switch (brandLower) {
@@ -182,14 +180,14 @@ class CardModel {
     }
   }
 
-  /// Obtener la ruta del logo de la marca (asset local)
-  /// Retorna la ruta del asset o cadena vacía si no existe
+  // Obtener la ruta del logo de la marca (asset local)
+  // Retorna la ruta del asset o cadena vacía si no existe
   static String getBrandLogo(String brand) {
     return _brandLogosAsset[brand.toLowerCase()] ?? '';
   }
 
-  /// Construir widget de logo de la marca usando assets locales
-  /// Retorna el logo en formato SVG o PNG según el asset disponible
+  // Construir widget de logo de la marca usando assets locales
+  // Retorna el logo en formato SVG o PNG según el asset disponible
   static Widget buildBrandLogo({
     required String brand,
     required double height,
@@ -265,12 +263,12 @@ class CardModel {
     return false;
   }
 
-  /// Obtener fecha de expiración formateada
+  // Obtener fecha de expiración formateada
   String getFormattedExpiry() {
     return '$expirationMonth/$expirationYear';
   }
 
-  /// Obtener número de tarjeta enmascarado (últimos 4 dígitos visibles)
+  // Obtener número de tarjeta enmascarado (últimos 4 dígitos visibles)
   String getMaskedNumber() {
     if (cardNumber.length >= 4) {
       return '****${cardNumber.substring(cardNumber.length - 4)}';

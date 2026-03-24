@@ -22,7 +22,6 @@ class _BillingScreenState extends State<BillingScreen> {
   @override
   void initState() {
     super.initState();
-    // Los servicios se obtienen en didChangeDependencies para asegurar que están disponibles
   }
 
   @override
@@ -30,7 +29,6 @@ class _BillingScreenState extends State<BillingScreen> {
     super.didChangeDependencies();
     _apiService = context.read<ApiService>();
     _authService = context.read<AuthService>();
-    // Solo cargar datos fiscales si hay un usuario autenticado
     final dataProvider = context.read<DataProvider>();
     if (dataProvider.user != null) {
       _loadFiscalData();
@@ -57,7 +55,6 @@ class _BillingScreenState extends State<BillingScreen> {
     }
 
     if (mounted) {
-      // Delay obligatorio de 1 segundo para mostrar indicador de carga
       await Future.delayed(const Duration(seconds: 1));
       setState(() => _loading = false);
     }

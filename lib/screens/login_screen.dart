@@ -107,11 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isNotEmpty && pass.isNotEmpty) {
       final response = await _authService.login(email, pass);
       
-      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
       await Future.delayed(const Duration(seconds: 1));
       
       if (response != null) {
-        // Guardar credenciales de forma segura para reactivación con biometría
+        // Guardar credenciales para reactivación con biometría
         await _authService.saveCredentials(email, pass);
         await _handleLoginSuccess();
       } else {

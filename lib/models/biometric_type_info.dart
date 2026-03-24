@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
-/// Modelo que representa un tipo de biometría disponible en el dispositivo
+/// Modelo para tipo de biometría disponible en el dispositivo
 class BiometricTypeInfo {
   final BiometricType type;
   final String displayName;
@@ -13,7 +13,7 @@ class BiometricTypeInfo {
     required this.icon,
   });
 
-  /// Obtiene la información de un tipo de biometría específico
+  // Obtiene la información de un tipo de biometría específico
   static BiometricTypeInfo fromType(BiometricType type) {
     switch (type) {
       case BiometricType.face:
@@ -51,15 +51,14 @@ class BiometricTypeInfo {
     }
   }
 
-  /// Verifica si este tipo representa una huella digital
+  // Verifica si este tipo representa una huella digital
   bool get isFingerprint {
     return type == BiometricType.fingerprint || 
            type == BiometricType.strong || 
            type == BiometricType.weak;
   }
 
-  /// Clave de preferencia única para este tipo de biometría
-  /// Usa fingerprint como clave para strong/weak (todos representan huella)
+  // Usa fingerprint como clave para strong/weak (todos representan huella)
   String get preferenceKey {
     if (isFingerprint) {
       return 'biometric_fingerprint_enabled';

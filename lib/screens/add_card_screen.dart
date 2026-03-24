@@ -42,7 +42,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
     
     _cardNumberController.addListener(_detectCardBrand);
     
-    // Delay obligatorio de 1 segundo para mostrar indicador de carga inicial
+    // Delay de carga inicial
     _initialLoadDelay();
   }
 

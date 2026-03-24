@@ -69,7 +69,6 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
     }
 
     if (mounted) {
-      // Prefill with current data
       if (_currentFiscalData != null) {
         _rfcController.text = _currentFiscalData!['code'] ?? '';
         _razonSocialController.text = _currentFiscalData!['name'] ?? '';
@@ -78,7 +77,6 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
 
       setState(() {
         _loadingCatalogs = false;
-        // Set selected values
         if (_currentFiscalData != null && _regimenes.isNotEmpty) {
           final regimen = _regimenes.firstWhere(
             (reg) => reg['id'] == _currentFiscalData!['fiscal_regime_id'],
@@ -158,7 +156,6 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
         return;
       }
 
-      // Find ids from selected values
       int? fiscalRegimeId;
       int? cfdiUsageId;
 
@@ -216,7 +213,6 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
               _showSuccess = true;
             });
             
-            // Esperar un momento para que el usuario vea el éxito
             await Future.delayed(const Duration(milliseconds: 1500));
             
             if (mounted && _showSuccess) {
@@ -493,10 +489,10 @@ class _EditBillingScreenState extends State<EditBillingScreen> {
             ),
           ),
         ),
-      ), // CIERRE DE OPACITY
-    ), // CIERRE DE ABSORBPOINTER
-    ), // CIERRE DEL BODY
-    ), // CIERRE DEL SCAFFOLD
-    ); // CIERRE DEL POPSCOPE
+      ),
+    ),
+    ),
+    ),
+    );
   }
 }

@@ -455,7 +455,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       
       await _apiService.post('/client/payments/pay', headers: headers, body: body);
       
-      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
       await Future.delayed(const Duration(seconds: 1));
       
       debugPrint('PaymentScreen: Pago exitoso!');

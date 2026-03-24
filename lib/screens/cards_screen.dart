@@ -96,7 +96,7 @@ class _CardsScreenState extends State<CardsScreen> {
     try {
       await _apiService.post('/client/cards/favorite', headers: headers, body: body);
       
-      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
+      // Delay para mostrar al usuario que su petición está siendo procesada
       await Future.delayed(const Duration(seconds: 1));
       
       await _loadCards();
@@ -155,7 +155,6 @@ class _CardsScreenState extends State<CardsScreen> {
     try {
       await _apiService.delete('/client/cards/$cardId', headers: headers);
       
-      // Delay obligatorio de 1 segundo para mostrar al usuario que su petición está siendo procesada
       await Future.delayed(const Duration(seconds: 1));
       
       await _loadCards();
